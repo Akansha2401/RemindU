@@ -19,6 +19,9 @@
 - [Git & GitHub Workflow](#git--github-workflow)
 - [Commit Message Format](#commit-message-format)
 
+> [!TIP]
+> **Testing on a physical device without Expo Go?** Follow the [Android Development Build guide](./Eas.md).
+
 ---
 
 ## Prerequisites
@@ -112,11 +115,11 @@ Every change in this project follows one branching model. Follow it exactly.
 
 ### Branches
 
-| Branch                      | Purpose                                         | Rules                                                                              |
-| --------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `main`                      | Production                                      | **Never commit, edit or push directly.**                                           |
-| `development`               | Head branch. Every feature starts from here.    | Only receives completed and tested features by merging the feature branch into it. |
-| `<feature-name>` (example: `login-user`) | One branch per feature             | Created from the latest `development`. Named after the feature in a short, lowercase, hyphen-separated form. |
+| Branch                                   | Purpose                                      | Rules                                                                                                        |
+| ---------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `main`                                   | Production                                   | **Never commit, edit or push directly.**                                                                     |
+| `development`                            | Head branch. Every feature starts from here. | Only receives completed and tested features by merging the feature branch into it.                           |
+| `<feature-name>` (example: `login-user`) | One branch per feature                       | Created from the latest `development`. Named after the feature in a short, lowercase, hyphen-separated form. |
 
 ```mermaid
 gitGraph
@@ -211,19 +214,19 @@ Only the first line (`type` and `subject`) is required. The scope, body and foot
 
 ### Types
 
-| Type       | Use for                                                |
-| ---------- | ------------------------------------------------------ |
-| `feat`     | A new feature or user-facing capability                |
-| `fix`      | A bug fix                                              |
-| `refactor` | Code restructuring with no behavior change             |
-| `perf`     | A performance improvement                              |
-| `style`    | Formatting only (whitespace, semicolons, lint fixes)   |
-| `docs`     | README or documentation changes                        |
-| `test`     | Adding or fixing tests                                 |
-| `chore`    | Maintenance: dependency bumps, config, cleanup         |
-| `build`    | Build system or Expo/EAS config changes               |
-| `ci`       | CI/CD pipeline changes                                 |
-| `revert`   | Reverting a previous commit                            |
+| Type       | Use for                                              |
+| ---------- | ---------------------------------------------------- |
+| `feat`     | A new feature or user-facing capability              |
+| `fix`      | A bug fix                                            |
+| `refactor` | Code restructuring with no behavior change           |
+| `perf`     | A performance improvement                            |
+| `style`    | Formatting only (whitespace, semicolons, lint fixes) |
+| `docs`     | README or documentation changes                      |
+| `test`     | Adding or fixing tests                               |
+| `chore`    | Maintenance: dependency bumps, config, cleanup       |
+| `build`    | Build system or Expo/EAS config changes              |
+| `ci`       | CI/CD pipeline changes                               |
+| `revert`   | Reverting a previous commit                          |
 
 > [!WARNING]
 > `style` means code formatting, not UI styling. Changing a button's padding or color is a `feat` or a `fix`. Using `style` for visual changes makes the history misleading.
@@ -267,9 +270,9 @@ Closes #14
 
 **Bad**
 
-| Message          | Problem                                             |
-| ---------------- | --------------------------------------------------- |
-| `fixed stuff`    | Says nothing about what was fixed or where          |
-| `login done`     | Not a change description, and no type               |
-| `WIP`            | Useless in history. Squash or amend before merging  |
-| `Update App.tsx` | Describes the file, not the change                  |
+| Message          | Problem                                            |
+| ---------------- | -------------------------------------------------- |
+| `fixed stuff`    | Says nothing about what was fixed or where         |
+| `login done`     | Not a change description, and no type              |
+| `WIP`            | Useless in history. Squash or amend before merging |
+| `Update App.tsx` | Describes the file, not the change                 |
