@@ -1,10 +1,10 @@
-import { Text, View, StyleSheet } from "react-native";
+import { Text, View } from "react-native";
 
 export default function Index() {
   return (
     <View className="flex-1 items-center justify-center bg-white">
       <Text className="text-xl font-bold text-blue-500">
-        Welcome to RemindU welcome welcome
+        Welcome to RemindU
       </Text>
     </View>
   );
