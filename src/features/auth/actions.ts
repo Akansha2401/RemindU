@@ -2,6 +2,7 @@ import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import { supabase } from "@/lib/supabase";
 import { onboarding$, onboardingActions } from "@/store/onboarding.store";
+import { sessionActions } from "@/store/session.store";
 import { setupActions } from "@/store/setup.store";
 import { pullSetup, pushOnboarding } from "../onboarding/sync";
 
@@ -53,8 +54,8 @@ export async function signInWithGoogle() {
 }
 
 /**
- * Copies onboarding answers into Setup *before* the session flips the route guard,
- * so Setup opens already filled in.
+ * Copies onboarding answers (goal, why, apps) into setup$ *before* the session flips the
+ * route guard, so Home and new timers already have them.
  */
 function prepareSetup() {
   const o = onboarding$.peek();
@@ -73,4 +74,5 @@ async function afterSignIn(userId: string) {
     if (answered) onboarding$.syncPending.set(true);
     console.warn("onboarding sync failed", e);
   }
+  await sessionActions.seedFromSetup().catch((e) => console.warn("could not start timers", e));
 }

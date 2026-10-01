@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { useFocusEffect } from "expo-router";
 import { sessionActions } from "@/store/session.store";
 
-/** Refreshes session$ from the phone every second while the screen is focused. */
+/** Refreshes sessions$ from the phone every second while the screen is focused. */
 export function useSessionPolling(intervalMs = 1000) {
   useFocusEffect(
     useCallback(() => {

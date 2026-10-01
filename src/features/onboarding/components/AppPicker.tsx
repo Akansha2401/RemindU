@@ -2,15 +2,14 @@ import { useEffect, useMemo } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
 import { batch, type Observable } from "@legendapp/state";
 import { useObservable, useValue } from "@legendapp/state/react";
-import { useQuery } from "@tanstack/react-query";
-import type { InstalledApp, NativeCategory } from "@modules/app-limiter";
+import type { InstalledApp } from "@modules/app-limiter";
 import { AppIcon } from "@/components/app-icon";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Text } from "@/components/ui/text";
 import { strings } from "@/constants/strings";
 import { groupApps, type AppSection } from "@/features/limiter/categories";
-import { guard } from "@/lib/guard";
+import { toInstalledApp, useGuardApps } from "@/hooks/useGuardApps";
 import type { GuardApp } from "@/types/guard";
 import { splitSuggested } from "../logic";
 
@@ -24,17 +23,6 @@ type AppPickerProps = Selection & {
   onLoaded?: (apps: GuardApp[]) => void;
 };
 
-export function useGuardApps() {
-  return useQuery({ queryKey: ["guard-apps"], queryFn: guard.getInstalledApps, staleTime: 5 * 60_000 });
-}
-
-const toInstalled = (a: GuardApp): InstalledApp => ({
-  packageName: a.packageName,
-  label: a.label,
-  category: a.category as NativeCategory,
-  isSystem: false,
-  icon: a.iconBase64,
-});
 
 /** Suggested apps first (APP-03), "See all apps" expands the categorised list (APP-02/04). */
 export function AppPicker({ selected$, labels$, onLoaded }: AppPickerProps) {
@@ -47,7 +35,7 @@ export function AppPicker({ selected$, labels$, onLoaded }: AppPickerProps) {
   }, [apps.data, onLoaded]);
 
   const { suggested, sections } = useMemo(() => {
-    const split = splitSuggested((apps.data ?? []).map(toInstalled));
+    const split = splitSuggested((apps.data ?? []).map(toInstalledApp));
     return { suggested: split.suggested, sections: groupApps(split.rest) };
   }, [apps.data]);
 

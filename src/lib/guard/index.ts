@@ -17,7 +17,7 @@ async function requestNotifications() {
   if (result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) await Linking.openSettings();
 }
 
-/** Backed by the app-limiter module: installed apps, permissions and the focus session engine. */
+/** Backed by the app-limiter module: installed apps, permissions, per-app timers and screen time. */
 function createNativeGuard(): Guard {
   const openers: Record<PermissionKind, () => void | Promise<void>> = {
     usage: AppLimiter.openUsageAccessSettings,
@@ -28,20 +28,21 @@ function createNativeGuard(): Guard {
 
   return {
     isNative: true,
-    async startSession(config) {
-      AppLimiter.startFocusSession({ ...config, everyHours: config.everyHours ?? 1 });
+    async addSessions(configs) {
+      AppLimiter.addAppSessions(configs);
     },
-    async updateSession() {
-      // Mid-session edits aren't supported by the native engine yet.
+    async getSessions() {
+      return AppLimiter.getAppSessions();
     },
-    async endSession() {
-      AppLimiter.endFocusSession();
+    async continueSession(id, budgetSec) {
+      return AppLimiter.continueAppSession(id, budgetSec);
     },
-    async continueSession(budgetSec) {
-      return AppLimiter.continueFocusSession(budgetSec);
+    async endSession(id) {
+      return AppLimiter.endAppSession(id);
     },
-    async getState() {
-      return AppLimiter.getFocusSession();
+    async getScreenTime(days) {
+      if (!AppLimiter.permissions().usageAccess) return [];
+      return AppLimiter.getScreenTime(days);
     },
     async getInstalledApps() {
       const apps = await AppLimiter.getInstalledApps(true);

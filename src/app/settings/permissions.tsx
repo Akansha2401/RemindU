@@ -13,7 +13,7 @@ export default function PermissionsSettingsScreen() {
       <View className="flex-row items-center gap-3 px-5 pb-2 pt-2">
         <IconButton icon="back" accessibilityLabel={strings.common.back} onPress={() => router.back()} />
         <Text accessibilityRole="header" className="text-section font-extrabold">
-          {strings.setup.permissionsTitle}
+          {strings.settings.permissions}
         </Text>
       </View>
       <ScrollView contentContainerClassName="px-5 pb-8 pt-3">

@@ -10,16 +10,14 @@ import { PlusJakartaSans_700Bold } from "@expo-google-fonts/plus-jakarta-sans/70
 import { PlusJakartaSans_800ExtraBold } from "@expo-google-fonts/plus-jakarta-sans/800ExtraBold";
 import { useValue } from "@legendapp/state/react";
 import { authStore$ } from "@/store/auth.store";
+import { prefs$ } from "@/store/prefs.store";
 import { PortalHost } from "@rn-primitives/portal";
 import { NAV_THEME } from "@/lib/theme";
 import { useColorScheme } from "nativewind";
 import { StatusBar } from "expo-status-bar";
 import { AppStateStatus, Platform } from "react-native";
-import {
-  focusManager,
-  QueryClient,
-  QueryClientProvider,
-} from "@tanstack/react-query";
+import { focusManager, QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/query";
 import { useOnlineManager } from "@/hooks/useOnlineManager";
 import { useAppState } from "@/hooks/useAppState";
 
@@ -31,13 +29,10 @@ function onAppStateChange(status: AppStateStatus) {
   }
 }
 
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 2 } },
-});
-
 export default function RootLayout() {
   const isLoggedIn = useValue(authStore$.isLoggedIn);
-  const { colorScheme } = useColorScheme();
+  const themePref = useValue(prefs$.theme);
+  const { colorScheme, setColorScheme } = useColorScheme();
   const scheme = colorScheme === "dark" ? "dark" : "light";
 
   // Plus Jakarta Sans 400–800 (RemindU Design System v1). Keep the splash up until loaded.
@@ -53,6 +48,11 @@ export default function RootLayout() {
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();
   }, [ready]);
+
+  // Settings > Dark mode: system, light or dark.
+  useEffect(() => {
+    setColorScheme(themePref);
+  }, [themePref, setColorScheme]);
 
   useOnlineManager();
 
@@ -72,8 +72,20 @@ export default function RootLayout() {
 
           <Stack.Protected guard={isLoggedIn}>
             <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="edit-apps" />
-            <Stack.Screen name="session" options={{ animation: "fade" }} />
+            <Stack.Screen
+              name="add"
+              options={{ presentation: "transparentModal", animation: "fade", contentStyle: { backgroundColor: "transparent" } }}
+            />
+            <Stack.Screen
+              name="session/[id]"
+              // The service re-opens the same timer while its app stays open; don't stack copies.
+              dangerouslySingular={(_, params) => String(params.id)}
+              options={{ animation: "fade" }}
+            />
+            <Stack.Screen name="goals/new" options={{ presentation: "modal" }} />
+            <Stack.Screen name="settings/index" />
+            <Stack.Screen name="settings/account" />
+            <Stack.Screen name="settings/help" />
             <Stack.Screen name="settings/permissions" />
             <Stack.Screen name="trial" options={{ presentation: "modal" }} />
             <Stack.Screen name="attribution" options={{ presentation: "modal", gestureEnabled: false }} />

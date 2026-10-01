@@ -1,25 +1,46 @@
 import type { Frequency } from "./onboarding";
 
-// Native session/apps/permissions contract. The UI codes against this;
+// Native sessions/apps/permissions contract. The UI codes against this;
 // src/lib/guard picks the native implementation or a mock.
 
-export type SessionConfig = {
+/** One timer per app, created from the Add sheet. */
+export type AppSessionConfig = {
   sessionId: string;
+  packageName: string;
+  label: string;
   goal: string;
   budgetSec: number;
   frequency: Frequency;
-  everyHours?: number;
-  packages: string[];
+  everyHours: number;
 };
 
-/** counting = a picked app is open; paused = anything else (or screen off); time_up = budget used. */
-export type SessionStatus = "counting" | "paused" | "time_up";
+/**
+ * waiting = the app hasn't been opened since the timer was added;
+ * counting = the app is open; paused = opened before, closed now (or screen off);
+ * time_up = the budget is used and RemindU asks for a check-in.
+ */
+export type SessionStatus = "waiting" | "counting" | "paused" | "time_up";
 
-export type SessionState = SessionConfig & {
+/** [start, end] epoch ms of one stretch the app was open. */
+export type UsageLog = [number, number];
+
+export type AppSession = AppSessionConfig & {
   remainingSec: number;
-  foregroundPackage: string | null;
-  startedAt: number;
+  createdAt: number;
+  /** First time the app was opened; null while waiting. */
+  startedAt: number | null;
   status: SessionStatus;
+  /** Times the user checked in after time was up and kept going. */
+  checkIns: number;
+  logs: UsageLog[];
+};
+
+export type ScreenTimeDay = {
+  /** yyyy-MM-dd, local time */
+  date: string;
+  totalMs: number;
+  /** Most used apps that day, largest first. */
+  apps: { packageName: string; label: string; ms: number }[];
 };
 
 export type GuardApp = {
@@ -32,17 +53,18 @@ export type GuardApp = {
 export type PermissionKind = "usage" | "overlay" | "notifications" | "battery";
 export type PermissionStatus = Record<PermissionKind, boolean>;
 
-export type SessionEndReason = "user_ended" | "emergency_exit";
-
 export type Guard = {
   /** false when running the mock (Expo Go, iOS, web, or native code not built yet). */
   isNative: boolean;
-  startSession(config: SessionConfig): Promise<void>;
-  updateSession(patch: Partial<SessionConfig>): Promise<void>;
-  endSession(reason: SessionEndReason): Promise<void>;
+  /** Adds a waiting timer per app; an app that already has one gets a fresh timer. */
+  addSessions(configs: AppSessionConfig[]): Promise<void>;
+  getSessions(): Promise<AppSession[]>;
   /** After time is up: start a new budget (every X hrs / continuous). */
-  continueSession(budgetSec: number): Promise<SessionState | null>;
-  getState(): Promise<SessionState | null>;
+  continueSession(sessionId: string, budgetSec: number): Promise<AppSession | null>;
+  /** Removes the timer and returns its final state. */
+  endSession(sessionId: string): Promise<AppSession | null>;
+  /** Last `days` days, today first. Empty without usage access. */
+  getScreenTime(days: number): Promise<ScreenTimeDay[]>;
   getInstalledApps(): Promise<GuardApp[]>;
   getPermissionStatus(): Promise<PermissionStatus>;
   openPermissionSettings(kind: PermissionKind): void | Promise<void>;
