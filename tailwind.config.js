@@ -19,6 +19,7 @@ module.exports = {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          hover: "hsl(var(--primary-hover))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -44,11 +45,38 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // RemindU-specific tokens (see src/global.css)
+        cocoa: "hsl(var(--label))", // field labels
+        walnut: "hsl(var(--body))", // body copy
+        takeover: "hsl(var(--takeover))",
+        "switch-off": "hsl(var(--switch-off))",
+        dashline: "hsl(var(--dashed))", // dashed utility button border
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          bg: "hsl(var(--success-bg))",
+        },
+        "error-bg": "hsl(var(--error-bg))",
+      },
+      // Type scale from the design system (size / line height)
+      fontSize: {
+        display: ["34px", "40px"],
+        quote: ["30px", "36px"],
+        title: ["28px", "34px"],
+        section: ["22px", "28px"],
+        button: ["16px", "20px"],
+        body: ["15px", "22px"],
+        label: ["13px", "18px"],
+        caption: ["12px", "16px"],
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        field: "10px", // stepper field
+        tile: "12px", // icon tile
+        row: "14px", // inline row
+        input: "16px", // input, list row
+        card: "20px", // card
       },
       borderWidth: {
         hairline: hairlineWidth(),

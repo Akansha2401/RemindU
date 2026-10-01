@@ -2,57 +2,78 @@
 @tailwind components;
 @tailwind utilities;
 
+/* RemindU Design System v1: cream app + dark "takeover" surface for check-ins.
+   Dark mode is derived from the takeover palette (espresso surfaces, cream text, same terracotta).
+   Keep in sync with THEME in src/lib/theme.ts. */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --background: 27.3 50% 91.4%; /* #F4E8DE cream */
+    --foreground: 26.7 33.3% 10.6%; /* #241A12 ink */
+    --card: 0 0% 100%; /* #FFFFFF */
+    --card-foreground: 26.7 33.3% 10.6%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 63%;
-    --radius: 0.625rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --popover-foreground: 26.7 33.3% 10.6%;
+    --primary: 18.6 79.1% 56.9%; /* #E8703A terracotta */
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 18.2 65.3% 47.5%; /* #C85A2A */
+    --secondary: 21 47.6% 16.5%; /* #3E2416 espresso */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 33 32.3% 87.8%; /* #EAE1D6 */
+    --muted-foreground: 25.7 11.1% 49.4%; /* #8C7C70 taupe */
+    --accent: 27.3 77.5% 86.1%; /* #F7D9C0 peach */
+    --accent-foreground: 24 40.8% 38.4%; /* #8A5A3A */
+    --destructive: 4.3 44.1% 43.5%; /* #A0453E */
+    --destructive-foreground: 0 0% 100%;
+    --border: 31.6 37.3% 90%; /* #EFE6DC hairline */
+    --input: 31.6 37.3% 90%;
+    --ring: 18.6 79.1% 56.9%;
+    --radius: 1rem;
+    --label: 28 25.4% 23.1%; /* #4A3A2C cocoa */
+    --body: 26.7 25% 28.2%; /* #5A4636 walnut */
+    --takeover: 25.4 44.8% 11.4%; /* #2A1B10 */
+    --switch-off: 32.7 23.9% 82%; /* #DCD2C6 */
+    --dashed: 28.9 20% 73.5%; /* #C9BBAE */
+    --success: 84.5 45.2% 32.9%; /* #5B7A2E */
+    --success-bg: 80 44.4% 89.4%; /* #E8F0D8 */
+    --error-bg: 0 35% 92.2%; /* #F2E4E4 */
+    --chart-1: 21 47.6% 16.5%;
+    --chart-2: 18.6 79.1% 56.9%;
+    --chart-3: 76.7 36.6% 48.2%;
+    --chart-4: 330.5 60.7% 79%;
   }
 
   .dark:root {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 70.9% 59.4%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 300 0% 45%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --background: 26.7 40.9% 8.6%; /* #1F150D */
+    --foreground: 27.3 50% 91.4%; /* #F4E8DE */
+    --card: 24.7 22.1% 15.1%; /* #2F251E */
+    --card-foreground: 27.3 50% 91.4%;
+    --popover: 24.7 22.1% 15.1%;
+    --popover-foreground: 27.3 50% 91.4%;
+    --primary: 18.6 79.1% 56.9%; /* #E8703A */
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 19.7 83.5% 64.3%; /* #F08A58 */
+    --secondary: 27.3 50% 91.4%; /* #F4E8DE: selected pills invert to cream */
+    --secondary-foreground: 21 47.6% 16.5%; /* #3E2416 */
+    --muted: 26.3 16% 19.6%; /* #3A312A */
+    --muted-foreground: 29 16% 64.5%; /* #B3A496 */
+    --accent: 20.8 53.1% 19.2%; /* #4B2917 terracotta tint */
+    --accent-foreground: 27.3 77.5% 86.1%; /* #F7D9C0 */
+    --destructive: 5.4 61.7% 68.2%; /* #E0857C */
+    --destructive-foreground: 25.4 44.8% 11.4%;
+    --border: 26.3 16% 19.6%; /* #3A312A */
+    --input: 26.3 16% 19.6%;
+    --ring: 18.6 79.1% 56.9%;
+    --label: 25.7 19.6% 79%; /* #D4C8BF */
+    --body: 25.7 14.1% 70.8%; /* #BFB3AA */
+    --takeover: 25.7 53.8% 5.1%; /* #140C06 */
+    --switch-off: 25.7 9.6% 28.6%; /* #504842 */
+    --dashed: 25 6.5% 36.1%; /* #625B56 */
+    --success: 83.4 40.7% 62.9%; /* #A9C77A */
+    --success-bg: 85.7 31.8% 17.3%; /* #2E3A1E */
+    --error-bg: 10 42.9% 19.2%; /* #46231C */
+    --chart-1: 27.3 50% 91.4%;
+    --chart-2: 18.6 79.1% 56.9%;
+    --chart-3: 76.7 36.6% 48.2%;
+    --chart-4: 330.5 60.7% 79%;
   }
 }
