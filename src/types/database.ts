@@ -139,6 +139,8 @@ export type Database = {
       }
       goals: {
         Row: {
+          challenge_days: number | null
+          completed_at: string | null
           created_at: string
           id: string
           is_active: boolean
@@ -148,6 +150,8 @@ export type Database = {
           why: string | null
         }
         Insert: {
+          challenge_days?: number | null
+          completed_at?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -157,6 +161,8 @@ export type Database = {
           why?: string | null
         }
         Update: {
+          challenge_days?: number | null
+          completed_at?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -171,7 +177,9 @@ export type Database = {
         Row: {
           acquisition_creator: string | null
           acquisition_source: string | null
+          avatar_url: string | null
           created_at: string
+          display_name: string | null
           id: string
           persona: string | null
           plan: string
@@ -181,7 +189,9 @@ export type Database = {
         Insert: {
           acquisition_creator?: string | null
           acquisition_source?: string | null
+          avatar_url?: string | null
           created_at?: string
+          display_name?: string | null
           id: string
           persona?: string | null
           plan?: string
@@ -191,7 +201,9 @@ export type Database = {
         Update: {
           acquisition_creator?: string | null
           acquisition_source?: string | null
+          avatar_url?: string | null
           created_at?: string
+          display_name?: string | null
           id?: string
           persona?: string | null
           plan?: string
@@ -205,7 +217,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_my_account: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
