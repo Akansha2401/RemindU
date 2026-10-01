@@ -1,6 +1,7 @@
 import { Stack, ThemeProvider } from "expo-router";
 import "../global.css";
-import { authStore } from "@/store/auth.store";
+import { useValue } from "@legendapp/state/react";
+import { authStore$ } from "@/store/auth.store";
 import { PortalHost } from "@rn-primitives/portal";
 import { NAV_THEME } from "@/lib/theme";
 import { colorScheme } from "nativewind";
@@ -25,7 +26,7 @@ const queryClient = new QueryClient({
 });
 
 export default function RootLayout() {
-  const { isLoggedIn } = authStore;
+  const isLoggedIn = useValue(authStore$.isLoggedIn);
 
   useOnlineManager();
 
@@ -36,7 +37,7 @@ export default function RootLayout() {
       <ThemeProvider value={NAV_THEME[colorScheme.get() ?? "light"]}>
         <StatusBar style={colorScheme.get() === "dark" ? "light" : "dark"} />
         <Stack>
-          <Stack.Protected guard={!isLoggedIn.get()}>
+          <Stack.Protected guard={!isLoggedIn}>
             <Stack.Screen
               name="index"
               options={{
@@ -45,14 +46,30 @@ export default function RootLayout() {
             />
           </Stack.Protected>
 
-          <Stack.Protected guard={isLoggedIn.get()}>
+          <Stack.Protected guard={isLoggedIn}>
             <Stack.Screen
               name="(tabs)"
               options={{
                 headerShown: false,
               }}
             />
+            <Stack.Screen name="limits/new" options={{ title: "New limit" }} />
+            <Stack.Screen
+              name="limits/permissions"
+              options={{ title: "Permissions" }}
+            />
           </Stack.Protected>
+
+          {/* Outside the auth guards: the native limiter service can open it anytime */}
+          <Stack.Screen
+            name="gate"
+            dangerouslySingular // reuse one gate screen instead of stacking a new one per open
+            options={{
+              headerShown: false,
+              presentation: "fullScreenModal",
+              gestureEnabled: false,
+            }}
+          />
           <PortalHost />
         </Stack>
       </ThemeProvider>
