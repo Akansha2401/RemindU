@@ -1,0 +1,84 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:1:1-47:12
+INJECTED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:1:1-47:12
+	package
+		INJECTED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml
+	xmlns:tools
+		ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:2:3-49
+	xmlns:android
+		ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:1:11-69
+uses-permission#android.permission.PACKAGE_USAGE_STATS
+ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:5:3-7:43
+	tools:ignore
+		ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:7:5-40
+	android:name
+		ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:6:5-58
+uses-permission#android.permission.SYSTEM_ALERT_WINDOW
+ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:10:3-76
+	android:name
+		ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:10:20-73
+uses-permission#android.permission.FOREGROUND_SERVICE
+ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:13:3-75
+	android:name
+		ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:13:20-72
+uses-permission#android.permission.FOREGROUND_SERVICE_SPECIAL_USE
+ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:14:3-87
+	android:name
+		ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:14:20-84
+uses-permission#android.permission.POST_NOTIFICATIONS
+ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:15:3-75
+	android:name
+		ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:15:20-72
+uses-permission#android.permission.RECEIVE_BOOT_COMPLETED
+ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:18:3-79
+	android:name
+		ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:18:20-76
+queries
+ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:22:3-27:13
+intent#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
+ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:23:5-26:14
+action#android.intent.action.MAIN
+ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:24:7-59
+	android:name
+		ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:24:15-56
+category#android.intent.category.LAUNCHER
+ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:25:7-67
+	android:name
+		ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:25:17-64
+application
+ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:29:3-46:17
+service#expo.modules.applimiter.LimiterService
+ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:30:5-37:15
+	android:exported
+		ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:32:7-31
+	android:foregroundServiceType
+		ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:33:7-49
+	android:name
+		ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:31:7-60
+property#android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE
+ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:34:7-36:86
+	android:value
+		ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:36:9-83
+	android:name
+		ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:35:9-68
+receiver#expo.modules.applimiter.BootReceiver
+ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:39:5-45:16
+	android:exported
+		ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:41:7-31
+	android:name
+		ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:40:7-58
+intent-filter#action:name:android.intent.action.BOOT_COMPLETED
+ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:42:7-44:23
+action#android.intent.action.BOOT_COMPLETED
+ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:43:9-71
+	android:name
+		ADDED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:43:17-68
+uses-sdk
+INJECTED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml
+INJECTED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml

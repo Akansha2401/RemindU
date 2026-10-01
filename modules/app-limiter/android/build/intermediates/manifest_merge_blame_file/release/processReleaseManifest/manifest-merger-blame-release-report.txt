@@ -1,0 +1,88 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    xmlns:tools="http://schemas.android.com/tools"
+4    package="expo.modules.applimiter" >
+5
+6    <uses-sdk android:minSdkVersion="24" />
+7
+8    <!-- Read which app is in the foreground. The user grants this in Settings > Usage access. -->
+9    <uses-permission
+9-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:5:3-7:43
+10        android:name="android.permission.PACKAGE_USAGE_STATS"
+10-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:6:5-58
+11        tools:ignore="ProtectedPermissions" />
+11-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:7:5-40
+12
+13    <!-- "Display over other apps": lets our service bring the check-in screen to the front. -->
+14    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+14-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:10:3-76
+14-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:10:20-73
+15
+16    <!-- Keeps the watcher alive with an ongoing notification. -->
+17    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+17-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:13:3-75
+17-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:13:20-72
+18    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+18-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:14:3-87
+18-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:14:20-84
+19    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+19-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:15:3-75
+19-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:15:20-72
+20
+21    <!-- Restart the watcher after the phone reboots. -->
+22    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+22-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:18:3-79
+22-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:18:20-76
+23
+24    <!--
+25       Android 11+ package visibility: lets us see every app that has a launcher icon
+26       WITHOUT the QUERY_ALL_PACKAGES permission (which Play reviews strictly).
+27    -->
+28    <queries>
+28-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:22:3-27:13
+29        <intent>
+29-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:23:5-26:14
+30            <action android:name="android.intent.action.MAIN" />
+30-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:24:7-59
+30-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:24:15-56
+31
+32            <category android:name="android.intent.category.LAUNCHER" />
+32-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:25:7-67
+32-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:25:17-64
+33        </intent>
+34    </queries>
+35
+36    <application>
+36-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:29:3-46:17
+37        <service
+37-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:30:5-37:15
+38            android:name="expo.modules.applimiter.LimiterService"
+38-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:31:7-60
+39            android:exported="false"
+39-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:32:7-31
+40            android:foregroundServiceType="specialUse" >
+40-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:33:7-49
+41            <property
+41-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:34:7-36:86
+42                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+42-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:35:9-68
+43                android:value="Enforces app time limits that the user sets for themselves" />
+43-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:36:9-83
+44        </service>
+45
+46        <receiver
+46-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:39:5-45:16
+47            android:name="expo.modules.applimiter.BootReceiver"
+47-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:40:7-58
+48            android:exported="false" >
+48-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:41:7-31
+49            <intent-filter>
+49-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:42:7-44:23
+50                <action android:name="android.intent.action.BOOT_COMPLETED" />
+50-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:43:9-71
+50-->/home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/AndroidManifest.xml:43:17-68
+51            </intent-filter>
+52        </receiver>
+53    </application>
+54
+55</manifest>

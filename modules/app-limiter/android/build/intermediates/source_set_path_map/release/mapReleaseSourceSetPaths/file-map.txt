@@ -1,0 +1,7 @@
+expo.modules.applimiter.app-limiter-pngs-0 /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/build/generated/res/pngs/release
+expo.modules.applimiter.app-limiter-resValues-1 /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/build/generated/res/resValues/release
+expo.modules.applimiter.app-limiter-mergeReleaseResources-2 /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/build/intermediates/incremental/release/mergeReleaseResources/merged.dir
+expo.modules.applimiter.app-limiter-mergeReleaseResources-3 /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/build/intermediates/incremental/release/mergeReleaseResources/stripped.dir
+expo.modules.applimiter.app-limiter-release-4 /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/build/intermediates/merged_res/release/mergeReleaseResources
+expo.modules.applimiter.app-limiter-main-5 /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/main/res
+expo.modules.applimiter.app-limiter-release-6 /home/fsk/Fsk/startup-projects/remindu/modules/app-limiter/android/src/release/res
