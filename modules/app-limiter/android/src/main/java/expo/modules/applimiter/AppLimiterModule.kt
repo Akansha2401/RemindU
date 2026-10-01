@@ -69,9 +69,24 @@ class AppLimiterModule : Module() {
     }
     Function("stopMonitoring") {
       LimiterStore.setMonitoring(context, false)
-      LimiterService.stop(context)
+      if (!LimiterStore.needsService(context)) LimiterService.stop(context)
     }
     Function("isMonitoring") { LimiterStore.isMonitoring(context) }
+
+    // ----- focus session (Setup -> Start session) -----
+    Function("startFocusSession") { json: String ->
+      LimiterStore.startFocus(context, json)
+      LimiterService.start(context)
+    }
+    Function("getFocusSession") { LimiterStore.focusSession(context)?.let { focusMap(it) } }
+    Function("continueFocusSession") { budgetSec: Double ->
+      LimiterStore.continueFocus(context, (budgetSec * 1000).toLong())?.let { focusMap(it) }
+    }
+    Function("endFocusSession") {
+      LimiterStore.clearFocus(context)
+      if (LimiterStore.needsService(context)) LimiterService.start(context) // refresh notification
+      else LimiterService.stop(context)
+    }
 
     // ----- navigation helpers for the gate screen -----
     Function("openApp") { pkg: String ->
@@ -171,6 +186,19 @@ class AppLimiterModule : Module() {
       mode == AppOpsManager.MODE_ALLOWED
     }
   }
+
+  private fun focusMap(s: FocusSession): Map<String, Any?> = mapOf(
+    "sessionId" to s.id,
+    "goal" to s.goal,
+    "budgetSec" to s.budgetMs / 1000.0,
+    "remainingSec" to s.remainingMs / 1000.0,
+    "packages" to s.packages.toList(),
+    "frequency" to s.frequency,
+    "everyHours" to s.everyHours,
+    "startedAt" to s.startedAt.toDouble(),
+    "status" to s.status,
+    "foregroundPackage" to s.foreground,
+  )
 
   private fun stateMap(ruleId: String): Map<String, Any?>? {
     val rule = LimiterStore.rule(context, ruleId) ?: return null

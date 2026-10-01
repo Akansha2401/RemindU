@@ -17,12 +17,8 @@ async function requestNotifications() {
   if (result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) await Linking.openSettings();
 }
 
-/**
- * BRD 11.4 contract backed by the app-limiter module for apps and permissions.
- * The session engine (start/update/end/check-ins) isn't native yet, so those calls use the mock.
- */
+/** Backed by the app-limiter module: installed apps, permissions and the focus session engine. */
 function createNativeGuard(): Guard {
-  const sessions = createMockGuard();
   const openers: Record<PermissionKind, () => void | Promise<void>> = {
     usage: AppLimiter.openUsageAccessSettings,
     overlay: AppLimiter.openOverlaySettings,
@@ -31,8 +27,22 @@ function createNativeGuard(): Guard {
   };
 
   return {
-    ...sessions,
     isNative: true,
+    async startSession(config) {
+      AppLimiter.startFocusSession({ ...config, everyHours: config.everyHours ?? 1 });
+    },
+    async updateSession() {
+      // Mid-session edits aren't supported by the native engine yet.
+    },
+    async endSession() {
+      AppLimiter.endFocusSession();
+    },
+    async continueSession(budgetSec) {
+      return AppLimiter.continueFocusSession(budgetSec);
+    },
+    async getState() {
+      return AppLimiter.getFocusSession();
+    },
     async getInstalledApps() {
       const apps = await AppLimiter.getInstalledApps(true);
       return apps.map((a) => ({

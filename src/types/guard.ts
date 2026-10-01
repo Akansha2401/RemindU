@@ -1,6 +1,6 @@
 import type { Frequency } from "./onboarding";
 
-// BRD 11.4 native module contract (modules/remindu-guard). The UI codes against this;
+// Native session/apps/permissions contract. The UI codes against this;
 // src/lib/guard picks the native implementation or a mock.
 
 export type SessionConfig = {
@@ -12,10 +12,14 @@ export type SessionConfig = {
   packages: string[];
 };
 
+/** counting = a picked app is open; paused = anything else (or screen off); time_up = budget used. */
+export type SessionStatus = "counting" | "paused" | "time_up";
+
 export type SessionState = SessionConfig & {
   remainingSec: number;
   foregroundPackage: string | null;
   startedAt: number;
+  status: SessionStatus;
 };
 
 export type GuardApp = {
@@ -36,7 +40,8 @@ export type Guard = {
   startSession(config: SessionConfig): Promise<void>;
   updateSession(patch: Partial<SessionConfig>): Promise<void>;
   endSession(reason: SessionEndReason): Promise<void>;
-  resolveCheckin(r: { checkinId: string; completed: boolean }): Promise<void>;
+  /** After time is up: start a new budget (every X hrs / continuous). */
+  continueSession(budgetSec: number): Promise<SessionState | null>;
   getState(): Promise<SessionState | null>;
   getInstalledApps(): Promise<GuardApp[]>;
   getPermissionStatus(): Promise<PermissionStatus>;

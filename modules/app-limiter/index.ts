@@ -41,6 +41,25 @@ export type RuleState = {
   date: string;
 };
 
+/** Focus session as stored on the phone. The budget counts down only while a picked app is open. */
+export type FocusSession = {
+  sessionId: string;
+  goal: string;
+  budgetSec: number;
+  remainingSec: number;
+  packages: string[];
+  frequency: "once" | "every" | "continuous";
+  everyHours: number;
+  startedAt: number; // epoch ms
+  status: "counting" | "paused" | "time_up";
+  foregroundPackage: string | null;
+};
+
+export type FocusSessionConfig = Pick<
+  FocusSession,
+  "sessionId" | "goal" | "budgetSec" | "packages" | "frequency" | "everyHours"
+>;
+
 type AppLimiterNative = {
   getInstalledApps(includeIcons: boolean): Promise<InstalledApp[]>;
   getAppInfo(pkg: string): Promise<InstalledApp | null>;
@@ -57,6 +76,10 @@ type AppLimiterNative = {
   startMonitoring(): void;
   stopMonitoring(): void;
   isMonitoring(): boolean;
+  startFocusSession(json: string): void;
+  getFocusSession(): FocusSession | null;
+  continueFocusSession(budgetSec: number): FocusSession | null;
+  endFocusSession(): void;
   openApp(pkg: string): boolean;
   goHome(): void;
 };
@@ -97,6 +120,11 @@ export const AppLimiter = {
   startMonitoring: () => native().startMonitoring(),
   stopMonitoring: () => native().stopMonitoring(),
   isMonitoring: () => native().isMonitoring(),
+
+  startFocusSession: (config: FocusSessionConfig) => native().startFocusSession(JSON.stringify(config)),
+  getFocusSession: () => native().getFocusSession(),
+  continueFocusSession: (budgetSec: number) => native().continueFocusSession(budgetSec),
+  endFocusSession: () => native().endFocusSession(),
 
   openApp: (pkg: string) => native().openApp(pkg),
   goHome: () => native().goHome(),

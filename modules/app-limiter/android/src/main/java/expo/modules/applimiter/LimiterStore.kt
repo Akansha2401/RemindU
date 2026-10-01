@@ -26,6 +26,23 @@ data class RuleState(
 )
 
 /**
+ * A focus session started from the Setup screen. The budget only counts down while one of
+ * [packages] is in the foreground and the screen is on.
+ */
+data class FocusSession(
+  val id: String,
+  val goal: String,
+  val budgetMs: Long, // original session length
+  val remainingMs: Long,
+  val packages: Set<String>,
+  val frequency: String, // once | every | continuous
+  val everyHours: Int,
+  val startedAt: Long,
+  val status: String, // counting | paused | time_up
+  val foreground: String?,
+)
+
+/**
  * On-device source of truth for enforcement.
  * Lives in SharedPreferences so it works offline and survives app kills/reboots.
  * Supabase is only a backup/sync of the rules, never needed at enforcement time.
@@ -35,6 +52,7 @@ object LimiterStore {
   private const val KEY_RULES = "rules"
   private const val KEY_STATE = "state"
   private const val KEY_MONITORING = "monitoring"
+  private const val KEY_FOCUS = "focus_session"
 
   @Volatile private var cachedRules: List<LimitRule>? = null
 
@@ -122,4 +140,94 @@ object LimiterStore {
     prefs(ctx).edit().putBoolean(KEY_MONITORING, on).apply()
 
   fun isMonitoring(ctx: Context): Boolean = prefs(ctx).getBoolean(KEY_MONITORING, false)
+
+  /** The watcher service is needed while app limits are on or a focus session is running. */
+  fun needsService(ctx: Context): Boolean = isMonitoring(ctx) || focusSession(ctx) != null
+
+  // ---------- focus session ----------
+
+  @Volatile private var cachedFocus: FocusSession? = null
+  @Volatile private var focusLoaded = false
+
+  /** [json]: { sessionId, goal, budgetSec, packages, frequency, everyHours } from JS. */
+  @Synchronized
+  fun startFocus(ctx: Context, json: String): FocusSession {
+    val o = JSONObject(json)
+    val pk = o.getJSONArray("packages")
+    val budgetMs = o.getLong("budgetSec") * 1000L
+    val s = FocusSession(
+      id = o.getString("sessionId"),
+      goal = o.optString("goal", ""),
+      budgetMs = budgetMs,
+      remainingMs = budgetMs,
+      packages = (0 until pk.length()).map { pk.getString(it) }.toSet(),
+      frequency = o.optString("frequency", "once"),
+      everyHours = o.optInt("everyHours", 1),
+      startedAt = System.currentTimeMillis(),
+      status = "paused",
+      foreground = null,
+    )
+    saveFocus(ctx, s)
+    return s
+  }
+
+  @Synchronized
+  fun focusSession(ctx: Context): FocusSession? {
+    if (focusLoaded) return cachedFocus
+    val raw = prefs(ctx).getString(KEY_FOCUS, null)
+    cachedFocus = raw?.let { parseFocus(JSONObject(it)) }
+    focusLoaded = true
+    return cachedFocus
+  }
+
+  @Synchronized
+  fun saveFocus(ctx: Context, s: FocusSession) {
+    cachedFocus = s
+    focusLoaded = true
+    prefs(ctx).edit().putString(KEY_FOCUS, focusJson(s).toString()).apply()
+  }
+
+  @Synchronized
+  fun clearFocus(ctx: Context) {
+    cachedFocus = null
+    focusLoaded = true
+    prefs(ctx).edit().remove(KEY_FOCUS).apply()
+  }
+
+  /** Starts a new budget after time ran out (every X hrs / continuous). */
+  @Synchronized
+  fun continueFocus(ctx: Context, budgetMs: Long): FocusSession? {
+    val s = focusSession(ctx) ?: return null
+    val next = s.copy(remainingMs = budgetMs, status = "paused")
+    saveFocus(ctx, next)
+    return next
+  }
+
+  private fun focusJson(s: FocusSession) = JSONObject()
+    .put("id", s.id)
+    .put("goal", s.goal)
+    .put("budgetMs", s.budgetMs)
+    .put("remainingMs", s.remainingMs)
+    .put("packages", JSONArray(s.packages.toList()))
+    .put("frequency", s.frequency)
+    .put("everyHours", s.everyHours)
+    .put("startedAt", s.startedAt)
+    .put("status", s.status)
+    .put("foreground", s.foreground ?: JSONObject.NULL)
+
+  private fun parseFocus(o: JSONObject): FocusSession {
+    val pk = o.getJSONArray("packages")
+    return FocusSession(
+      id = o.getString("id"),
+      goal = o.optString("goal", ""),
+      budgetMs = o.getLong("budgetMs"),
+      remainingMs = o.getLong("remainingMs"),
+      packages = (0 until pk.length()).map { pk.getString(it) }.toSet(),
+      frequency = o.optString("frequency", "once"),
+      everyHours = o.optInt("everyHours", 1),
+      startedAt = o.getLong("startedAt"),
+      status = o.optString("status", "paused"),
+      foreground = if (o.isNull("foreground")) null else o.optString("foreground"),
+    )
+  }
 }

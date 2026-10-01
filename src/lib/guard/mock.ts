@@ -13,8 +13,8 @@ const MOCK_APPS: GuardApp[] = [
 ];
 
 /**
- * In-memory guard matching the BRD 11.4 contract. "Opening" a permission grants it,
- * so the onboarding flow can be clicked through without the native module.
+ * In-memory guard for Expo Go / iOS / web. "Opening" a permission grants it, so the flow
+ * can be clicked through. There's no foreground-app detection, so sessions stay paused.
  */
 export function createMockGuard(): Guard {
   const permissions: PermissionStatus = { usage: false, overlay: false, notifications: false, battery: false };
@@ -23,7 +23,13 @@ export function createMockGuard(): Guard {
   return {
     isNative: false,
     async startSession(config) {
-      session = { ...config, remainingSec: config.budgetSec, foregroundPackage: null, startedAt: Date.now() };
+      session = {
+        ...config,
+        remainingSec: config.budgetSec,
+        foregroundPackage: null,
+        startedAt: Date.now(),
+        status: "paused",
+      };
     },
     async updateSession(patch) {
       if (session) session = { ...session, ...patch };
@@ -31,7 +37,10 @@ export function createMockGuard(): Guard {
     async endSession() {
       session = null;
     },
-    async resolveCheckin() {},
+    async continueSession(budgetSec) {
+      if (session) session = { ...session, remainingSec: budgetSec, status: "paused" };
+      return session;
+    },
     async getState() {
       return session;
     },

@@ -73,6 +73,7 @@ export default function RootLayout() {
           <Stack.Protected guard={isLoggedIn}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="edit-apps" />
+            <Stack.Screen name="session" options={{ animation: "fade" }} />
             <Stack.Screen name="settings/permissions" />
             <Stack.Screen name="trial" options={{ presentation: "modal" }} />
             <Stack.Screen name="attribution" options={{ presentation: "modal", gestureEnabled: false }} />

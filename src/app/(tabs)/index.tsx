@@ -1,5 +1,6 @@
+import { useCallback } from "react";
 import { ScrollView, View } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useObservable, useValue } from "@legendapp/state/react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/button";
@@ -8,9 +9,9 @@ import { strings } from "@/constants/strings";
 import { isGoalValid, missingPermissions, selectedPackages } from "@/features/onboarding/logic";
 import { AppsSummary, FrequencyField, GoalField, LengthField, PermissionBanner } from "@/features/setup/components";
 import { usePermissionStatus } from "@/hooks/usePermissionStatus";
-import { track } from "@/lib/analytics";
-import { guard, REQUIRED_PERMISSIONS } from "@/lib/guard";
+import { REQUIRED_PERMISSIONS } from "@/lib/guard";
 import { permissions$ } from "@/store/permissions.store";
+import { session$, sessionActions } from "@/store/session.store";
 import { setup$ } from "@/store/setup.store";
 
 const copy = strings.setup;
@@ -18,8 +19,9 @@ const copy = strings.setup;
 /** Setup (SET-*): opens pre-filled from onboarding, with one primary action. */
 export default function SetupScreen() {
   usePermissionStatus();
-  const started$ = useObservable(false);
-  const started = useValue(started$);
+  const starting$ = useObservable(false);
+  const starting = useValue(starting$);
+  const running = useValue(() => !!session$.get());
   const firstSession = useValue(() => setup$.sessionsStarted.get() === 0);
 
   // SET-05: why the button is disabled, if it is.
@@ -31,21 +33,21 @@ export default function SetupScreen() {
     return null;
   });
 
+  // Is a session already running? (e.g. started earlier, then the app was closed)
+  useFocusEffect(
+    useCallback(() => {
+      sessionActions.refresh();
+    }, []),
+  );
+
   async function start() {
-    const s = setup$.peek();
-    const packages = selectedPackages(s.apps);
-    // The native session engine isn't built yet; guard falls back to the BRD 11.4 mock.
-    await guard.startSession({
-      sessionId: `${Date.now()}`,
-      goal: s.goal.trim(),
-      budgetSec: s.lengthMin * 60,
-      frequency: s.frequency,
-      everyHours: s.frequency === "every" ? s.everyHours : undefined,
-      packages,
-    });
-    setup$.sessionsStarted.set((n) => n + 1);
-    track("session_started", { budget_sec: s.lengthMin * 60, frequency: s.frequency, apps_count: packages.length });
-    started$.set(true);
+    starting$.set(true);
+    try {
+      await sessionActions.start();
+      router.push("/session");
+    } finally {
+      starting$.set(false);
+    }
   }
 
   return (
@@ -68,11 +70,18 @@ export default function SetupScreen() {
       </ScrollView>
 
       <View className="gap-2 px-5 pb-4 pt-3">
-        {blocker ? <Text className="text-center text-caption text-muted-foreground">{blocker}</Text> : null}
-        {started && !blocker ? <Text className="text-center text-caption text-success">{copy.sessionStarted}</Text> : null}
-        <Button disabled={!!blocker} onPress={start}>
-          <Text>{firstSession ? copy.startFirst : copy.start}</Text>
-        </Button>
+        {running ? (
+          <Button onPress={() => router.push("/session")}>
+            <Text>{strings.session.viewSession}</Text>
+          </Button>
+        ) : (
+          <>
+            {blocker ? <Text className="text-center text-caption text-muted-foreground">{blocker}</Text> : null}
+            <Button disabled={!!blocker || starting} onPress={start}>
+              <Text>{firstSession ? copy.startFirst : copy.start}</Text>
+            </Button>
+          </>
+        )}
       </View>
     </SafeAreaView>
   );
