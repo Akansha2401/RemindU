@@ -2,6 +2,8 @@ package expo.modules.applimiter
 
 import android.Manifest
 import android.app.AppOpsManager
+import android.app.usage.UsageEvents
+import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
@@ -19,6 +21,10 @@ import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.io.ByteArrayOutputStream
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 class AppLimiterModule : Module() {
 
@@ -73,20 +79,24 @@ class AppLimiterModule : Module() {
     }
     Function("isMonitoring") { LimiterStore.isMonitoring(context) }
 
-    // ----- focus session (Setup -> Start session) -----
-    Function("startFocusSession") { json: String ->
-      LimiterStore.startFocus(context, json)
+    // ----- per-app sessions (Add sheet -> Done) -----
+    Function("addAppSessions") { json: String ->
+      LimiterStore.addSessions(context, json)
       LimiterService.start(context)
     }
-    Function("getFocusSession") { LimiterStore.focusSession(context)?.let { focusMap(it) } }
-    Function("continueFocusSession") { budgetSec: Double ->
-      LimiterStore.continueFocus(context, (budgetSec * 1000).toLong())?.let { focusMap(it) }
+    Function("getAppSessions") { LimiterStore.sessions(context).map { sessionMap(it) } }
+    Function("continueAppSession") { id: String, budgetSec: Double ->
+      LimiterStore.continueSession(context, id, (budgetSec * 1000).toLong())?.let { sessionMap(it) }
     }
-    Function("endFocusSession") {
-      LimiterStore.clearFocus(context)
+    Function("endAppSession") { id: String ->
+      val ended = LimiterStore.removeSession(context, id)
       if (LimiterStore.needsService(context)) LimiterService.start(context) // refresh notification
       else LimiterService.stop(context)
+      ended?.let { sessionMap(it) }
     }
+
+    // ----- screen time (Home and Profile stats) -----
+    AsyncFunction("getScreenTime") { days: Int -> screenTime(days.coerceIn(1, 30)) }
 
     // ----- navigation helpers for the gate screen -----
     Function("openApp") { pkg: String ->
@@ -187,18 +197,85 @@ class AppLimiterModule : Module() {
     }
   }
 
-  private fun focusMap(s: FocusSession): Map<String, Any?> = mapOf(
+  private fun sessionMap(s: AppSession): Map<String, Any?> = mapOf(
     "sessionId" to s.id,
+    "packageName" to s.pkg,
+    "label" to s.label,
     "goal" to s.goal,
     "budgetSec" to s.budgetMs / 1000.0,
     "remainingSec" to s.remainingMs / 1000.0,
-    "packages" to s.packages.toList(),
     "frequency" to s.frequency,
     "everyHours" to s.everyHours,
-    "startedAt" to s.startedAt.toDouble(),
+    "createdAt" to s.createdAt.toDouble(), // JS numbers are doubles
+    "startedAt" to if (s.startedAt == 0L) null else s.startedAt.toDouble(),
     "status" to s.status,
-    "foregroundPackage" to s.foreground,
+    "checkIns" to s.checkIns,
+    "logs" to s.logs.map { listOf(it.start.toDouble(), it.end.toDouble()) },
   )
+
+  /**
+   * Foreground time per day for the last [days] days (today included), from usage events,
+   * which is how Digital Wellbeing counts it. RemindU itself and the home screen are left out.
+   */
+  private fun screenTime(days: Int): List<Map<String, Any?>> {
+    val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+    val pm = context.packageManager
+    val home = pm.resolveActivity(
+      Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME), PackageManager.MATCH_DEFAULT_ONLY
+    )?.activityInfo?.packageName
+    val skip = setOf(context.packageName, home)
+    val now = System.currentTimeMillis()
+    val day = Calendar.getInstance().apply {
+      set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+    }
+    val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+    val labels = HashMap<String, String>()
+
+    return (0 until days).map { i ->
+      val start = (day.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, -i) }
+      val from = start.timeInMillis
+      val to = minOf(now, (start.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis)
+      val perApp = foregroundTotals(usm, from, to).filterKeys { it !in skip }
+      val top = perApp.entries.sortedByDescending { it.value }.take(5).map { (pkg, ms) ->
+        val label = labels.getOrPut(pkg) {
+          try { pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString() } catch (e: Exception) { pkg }
+        }
+        mapOf("packageName" to pkg, "label" to label, "ms" to ms.toDouble())
+      }
+      mapOf("date" to fmt.format(Date(from)), "totalMs" to perApp.values.sum().toDouble(), "apps" to top)
+    }
+  }
+
+  /** Sums resumed -> paused/stopped spans per package; the screen turning off ends a span. */
+  @Suppress("DEPRECATION")
+  private fun foregroundTotals(usm: UsageStatsManager, from: Long, to: Long): Map<String, Long> {
+    val totals = HashMap<String, Long>()
+    val events = usm.queryEvents(from, to)
+    val e = UsageEvents.Event()
+    var current: String? = null
+    var since = 0L
+    fun close(at: Long) {
+      current?.let { totals[it] = (totals[it] ?: 0L) + (at - since).coerceAtLeast(0L) }
+      current = null
+    }
+    while (events.hasNextEvent()) {
+      events.getNextEvent(e)
+      when (e.eventType) {
+        UsageEvents.Event.MOVE_TO_FOREGROUND -> {
+          if (current != e.packageName) {
+            close(e.timeStamp)
+            current = e.packageName
+            since = e.timeStamp
+          }
+        }
+        UsageEvents.Event.MOVE_TO_BACKGROUND, 23 /* ACTIVITY_STOPPED */ ->
+          if (current == e.packageName) close(e.timeStamp)
+        UsageEvents.Event.SCREEN_NON_INTERACTIVE, UsageEvents.Event.KEYGUARD_SHOWN -> close(e.timeStamp)
+      }
+    }
+    close(to)
+    return totals
+  }
 
   private fun stateMap(ruleId: String): Map<String, Any?>? {
     val rule = LimiterStore.rule(context, ruleId) ?: return null

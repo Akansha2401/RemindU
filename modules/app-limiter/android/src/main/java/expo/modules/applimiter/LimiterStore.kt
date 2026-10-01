@@ -25,21 +25,27 @@ data class RuleState(
   val activeUntil: Long, // epoch ms; 0 = no session started today
 )
 
+/** One stretch of time an app was open: [start, end] in epoch ms. */
+data class UsageLog(val start: Long, val end: Long)
+
 /**
- * A focus session started from the Setup screen. The budget only counts down while one of
- * [packages] is in the foreground and the screen is on.
+ * A timer for one app. It waits until the app is first opened, then counts [remainingMs]
+ * down only while that app is in the foreground and the screen is on.
  */
-data class FocusSession(
+data class AppSession(
   val id: String,
+  val pkg: String,
+  val label: String,
   val goal: String,
-  val budgetMs: Long, // original session length
+  val budgetMs: Long, // session length
   val remainingMs: Long,
-  val packages: Set<String>,
   val frequency: String, // once | every | continuous
   val everyHours: Int,
-  val startedAt: Long,
-  val status: String, // counting | paused | time_up
-  val foreground: String?,
+  val createdAt: Long,
+  val startedAt: Long, // first time the app was opened; 0 = still waiting
+  val status: String, // waiting | counting | paused | time_up
+  val checkIns: Int, // times the user came back after time was up
+  val logs: List<UsageLog>,
 )
 
 /**
@@ -52,7 +58,6 @@ object LimiterStore {
   private const val KEY_RULES = "rules"
   private const val KEY_STATE = "state"
   private const val KEY_MONITORING = "monitoring"
-  private const val KEY_FOCUS = "focus_session"
 
   @Volatile private var cachedRules: List<LimitRule>? = null
 
@@ -141,93 +146,140 @@ object LimiterStore {
 
   fun isMonitoring(ctx: Context): Boolean = prefs(ctx).getBoolean(KEY_MONITORING, false)
 
-  /** The watcher service is needed while app limits are on or a focus session is running. */
-  fun needsService(ctx: Context): Boolean = isMonitoring(ctx) || focusSession(ctx) != null
+  /** The watcher service is needed while app limits are on or any app session exists. */
+  fun needsService(ctx: Context): Boolean = isMonitoring(ctx) || sessions(ctx).isNotEmpty()
 
-  // ---------- focus session ----------
+  // ---------- app sessions ----------
 
-  @Volatile private var cachedFocus: FocusSession? = null
-  @Volatile private var focusLoaded = false
+  private const val KEY_SESSIONS = "app_sessions"
+  private const val MAX_LOGS = 300
 
-  /** [json]: { sessionId, goal, budgetSec, packages, frequency, everyHours } from JS. */
+  @Volatile private var cachedSessions: List<AppSession>? = null
+
   @Synchronized
-  fun startFocus(ctx: Context, json: String): FocusSession {
-    val o = JSONObject(json)
-    val pk = o.getJSONArray("packages")
-    val budgetMs = o.getLong("budgetSec") * 1000L
-    val s = FocusSession(
-      id = o.getString("sessionId"),
-      goal = o.optString("goal", ""),
-      budgetMs = budgetMs,
-      remainingMs = budgetMs,
-      packages = (0 until pk.length()).map { pk.getString(it) }.toSet(),
-      frequency = o.optString("frequency", "once"),
-      everyHours = o.optInt("everyHours", 1),
-      startedAt = System.currentTimeMillis(),
-      status = "paused",
-      foreground = null,
-    )
-    saveFocus(ctx, s)
-    return s
+  fun sessions(ctx: Context): List<AppSession> {
+    cachedSessions?.let { return it }
+    val arr = JSONArray(prefs(ctx).getString(KEY_SESSIONS, "[]") ?: "[]")
+    val parsed = (0 until arr.length()).map { parseSession(arr.getJSONObject(it)) }
+    cachedSessions = parsed
+    return parsed
   }
 
   @Synchronized
-  fun focusSession(ctx: Context): FocusSession? {
-    if (focusLoaded) return cachedFocus
-    val raw = prefs(ctx).getString(KEY_FOCUS, null)
-    cachedFocus = raw?.let { parseFocus(JSONObject(it)) }
-    focusLoaded = true
-    return cachedFocus
+  fun session(ctx: Context, id: String): AppSession? = sessions(ctx).firstOrNull { it.id == id }
+
+  @Synchronized
+  fun saveSessions(ctx: Context, list: List<AppSession>) {
+    cachedSessions = list
+    val arr = JSONArray()
+    list.forEach { arr.put(sessionJson(it)) }
+    prefs(ctx).edit().putString(KEY_SESSIONS, arr.toString()).apply()
   }
 
   @Synchronized
-  fun saveFocus(ctx: Context, s: FocusSession) {
-    cachedFocus = s
-    focusLoaded = true
-    prefs(ctx).edit().putString(KEY_FOCUS, focusJson(s).toString()).apply()
+  fun updateSession(ctx: Context, next: AppSession) {
+    saveSessions(ctx, sessions(ctx).map { if (it.id == next.id) next else it })
   }
 
+  /**
+   * [json]: [{ sessionId, packageName, label, goal, budgetSec, frequency, everyHours }] from JS.
+   * Each app has at most one session, so adding an app again replaces its old timer.
+   */
   @Synchronized
-  fun clearFocus(ctx: Context) {
-    cachedFocus = null
-    focusLoaded = true
-    prefs(ctx).edit().remove(KEY_FOCUS).apply()
+  fun addSessions(ctx: Context, json: String): List<AppSession> {
+    val arr = JSONArray(json)
+    val now = System.currentTimeMillis()
+    val added = (0 until arr.length()).map { i ->
+      val o = arr.getJSONObject(i)
+      val budgetMs = o.getLong("budgetSec") * 1000L
+      AppSession(
+        id = o.getString("sessionId"),
+        pkg = o.getString("packageName"),
+        label = o.optString("label", o.getString("packageName")),
+        goal = o.optString("goal", ""),
+        budgetMs = budgetMs,
+        remainingMs = budgetMs,
+        frequency = o.optString("frequency", "once"),
+        everyHours = o.optInt("everyHours", 1),
+        createdAt = now,
+        startedAt = 0L,
+        status = "waiting",
+        checkIns = 0,
+        logs = emptyList(),
+      )
+    }
+    val pkgs = added.map { it.pkg }.toSet()
+    saveSessions(ctx, sessions(ctx).filter { it.pkg !in pkgs } + added)
+    return added
   }
 
   /** Starts a new budget after time ran out (every X hrs / continuous). */
   @Synchronized
-  fun continueFocus(ctx: Context, budgetMs: Long): FocusSession? {
-    val s = focusSession(ctx) ?: return null
-    val next = s.copy(remainingMs = budgetMs, status = "paused")
-    saveFocus(ctx, next)
+  fun continueSession(ctx: Context, id: String, budgetMs: Long): AppSession? {
+    val s = session(ctx, id) ?: return null
+    val next = s.copy(remainingMs = budgetMs, status = "paused", checkIns = s.checkIns + 1)
+    updateSession(ctx, next)
     return next
   }
 
-  private fun focusJson(s: FocusSession) = JSONObject()
-    .put("id", s.id)
-    .put("goal", s.goal)
-    .put("budgetMs", s.budgetMs)
-    .put("remainingMs", s.remainingMs)
-    .put("packages", JSONArray(s.packages.toList()))
-    .put("frequency", s.frequency)
-    .put("everyHours", s.everyHours)
-    .put("startedAt", s.startedAt)
-    .put("status", s.status)
-    .put("foreground", s.foreground ?: JSONObject.NULL)
+  /** Removes the session and returns it as it was, so JS can keep its history. */
+  @Synchronized
+  fun removeSession(ctx: Context, id: String): AppSession? {
+    val s = session(ctx, id) ?: return null
+    saveSessions(ctx, sessions(ctx).filter { it.id != id })
+    return s
+  }
 
-  private fun parseFocus(o: JSONObject): FocusSession {
-    val pk = o.getJSONArray("packages")
-    return FocusSession(
+  /** Extends the current usage log, or starts a new one after a gap. */
+  fun withUsage(s: AppSession, from: Long, now: Long, gapMs: Long): AppSession {
+    val last = s.logs.lastOrNull()
+    val logs = if (last != null && from - last.end <= gapMs) {
+      s.logs.dropLast(1) + last.copy(end = now)
+    } else {
+      (s.logs + UsageLog(from, now)).takeLast(MAX_LOGS)
+    }
+    return s.copy(logs = logs)
+  }
+
+  private fun sessionJson(s: AppSession): JSONObject {
+    val logs = JSONArray()
+    s.logs.forEach { logs.put(JSONArray().put(it.start).put(it.end)) }
+    return JSONObject()
+      .put("id", s.id)
+      .put("pkg", s.pkg)
+      .put("label", s.label)
+      .put("goal", s.goal)
+      .put("budgetMs", s.budgetMs)
+      .put("remainingMs", s.remainingMs)
+      .put("frequency", s.frequency)
+      .put("everyHours", s.everyHours)
+      .put("createdAt", s.createdAt)
+      .put("startedAt", s.startedAt)
+      .put("status", s.status)
+      .put("checkIns", s.checkIns)
+      .put("logs", logs)
+  }
+
+  private fun parseSession(o: JSONObject): AppSession {
+    val arr = o.optJSONArray("logs") ?: JSONArray()
+    val logs = (0 until arr.length()).map {
+      val l = arr.getJSONArray(it)
+      UsageLog(l.getLong(0), l.getLong(1))
+    }
+    return AppSession(
       id = o.getString("id"),
+      pkg = o.getString("pkg"),
+      label = o.optString("label", o.getString("pkg")),
       goal = o.optString("goal", ""),
       budgetMs = o.getLong("budgetMs"),
       remainingMs = o.getLong("remainingMs"),
-      packages = (0 until pk.length()).map { pk.getString(it) }.toSet(),
       frequency = o.optString("frequency", "once"),
       everyHours = o.optInt("everyHours", 1),
-      startedAt = o.getLong("startedAt"),
-      status = o.optString("status", "paused"),
-      foreground = if (o.isNull("foreground")) null else o.optString("foreground"),
+      createdAt = o.getLong("createdAt"),
+      startedAt = o.optLong("startedAt", 0L),
+      status = o.optString("status", "waiting"),
+      checkIns = o.optInt("checkIns", 0),
+      logs = logs,
     )
   }
 }

@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 
-/** Restarts the watcher after a reboot if app limits are on or a focus session is running. */
+/** Restarts the watcher after a reboot if app limits are on or an app session exists. */
 class BootReceiver : BroadcastReceiver() {
   override fun onReceive(context: Context, intent: Intent) {
     if (intent.action != Intent.ACTION_BOOT_COMPLETED) return

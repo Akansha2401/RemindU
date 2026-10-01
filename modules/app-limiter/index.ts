@@ -41,24 +41,35 @@ export type RuleState = {
   date: string;
 };
 
-/** Focus session as stored on the phone. The budget counts down only while a picked app is open. */
-export type FocusSession = {
+/** Per-app timer as stored on the phone. It waits until the app is opened, then counts down while it's open. */
+export type NativeAppSession = {
   sessionId: string;
+  packageName: string;
+  label: string;
   goal: string;
   budgetSec: number;
   remainingSec: number;
-  packages: string[];
   frequency: "once" | "every" | "continuous";
   everyHours: number;
-  startedAt: number; // epoch ms
-  status: "counting" | "paused" | "time_up";
-  foregroundPackage: string | null;
+  createdAt: number; // epoch ms
+  startedAt: number | null; // first open; null = waiting
+  status: "waiting" | "counting" | "paused" | "time_up";
+  checkIns: number;
+  /** [start, end] epoch ms of each stretch the app was open. */
+  logs: [number, number][];
 };
 
-export type FocusSessionConfig = Pick<
-  FocusSession,
-  "sessionId" | "goal" | "budgetSec" | "packages" | "frequency" | "everyHours"
+export type NativeAppSessionConfig = Pick<
+  NativeAppSession,
+  "sessionId" | "packageName" | "label" | "goal" | "budgetSec" | "frequency" | "everyHours"
 >;
+
+/** Foreground time for one day (yyyy-MM-dd), with the five most used apps. */
+export type NativeScreenTimeDay = {
+  date: string;
+  totalMs: number;
+  apps: { packageName: string; label: string; ms: number }[];
+};
 
 type AppLimiterNative = {
   getInstalledApps(includeIcons: boolean): Promise<InstalledApp[]>;
@@ -76,10 +87,11 @@ type AppLimiterNative = {
   startMonitoring(): void;
   stopMonitoring(): void;
   isMonitoring(): boolean;
-  startFocusSession(json: string): void;
-  getFocusSession(): FocusSession | null;
-  continueFocusSession(budgetSec: number): FocusSession | null;
-  endFocusSession(): void;
+  addAppSessions(json: string): void;
+  getAppSessions(): NativeAppSession[];
+  continueAppSession(id: string, budgetSec: number): NativeAppSession | null;
+  endAppSession(id: string): NativeAppSession | null;
+  getScreenTime(days: number): Promise<NativeScreenTimeDay[]>;
   openApp(pkg: string): boolean;
   goHome(): void;
 };
@@ -121,10 +133,11 @@ export const AppLimiter = {
   stopMonitoring: () => native().stopMonitoring(),
   isMonitoring: () => native().isMonitoring(),
 
-  startFocusSession: (config: FocusSessionConfig) => native().startFocusSession(JSON.stringify(config)),
-  getFocusSession: () => native().getFocusSession(),
-  continueFocusSession: (budgetSec: number) => native().continueFocusSession(budgetSec),
-  endFocusSession: () => native().endFocusSession(),
+  addAppSessions: (configs: NativeAppSessionConfig[]) => native().addAppSessions(JSON.stringify(configs)),
+  getAppSessions: () => native().getAppSessions(),
+  continueAppSession: (id: string, budgetSec: number) => native().continueAppSession(id, budgetSec),
+  endAppSession: (id: string) => native().endAppSession(id),
+  getScreenTime: (days: number) => native().getScreenTime(days),
 
   openApp: (pkg: string) => native().openApp(pkg),
   goHome: () => native().goHome(),

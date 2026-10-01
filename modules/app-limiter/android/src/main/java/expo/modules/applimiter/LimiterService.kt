@@ -9,7 +9,6 @@ import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.net.Uri
 import android.os.Build
@@ -21,8 +20,8 @@ import android.util.Log
 
 /**
  * Foreground service that watches which app is open (via UsageStatsManager) and:
- *  - runs the focus session: counts the budget down only while a picked app is open,
- *    and brings RemindU to the front when time is up;
+ *  - runs the per-app sessions: each timer waits until its app is opened, counts down only
+ *    while that app is open, logs when it was used, and brings RemindU to the front at zero;
  *  - enforces app limits: brings up the check-in gate when a limited app is opened
  *    without an active limit session.
  */
@@ -55,8 +54,8 @@ class LimiterService : Service() {
   private var lastForeground: String? = null
   private var lastGateAt = 0L
   private var lastSessionOpenAt = 0L
-  // When the focus budget was last updated; 0 = don't count the gap (screen was off, service restarted).
-  private var focusTickAt = 0L
+  // When the session timers were last updated; 0 = don't count the gap (screen was off, service restarted).
+  private var sessionTickAt = 0L
   private var notifKey: String? = null
 
   private val tick = object : Runnable {
@@ -103,16 +102,17 @@ class LimiterService : Service() {
     val power = getSystemService(Context.POWER_SERVICE) as PowerManager
     if (!power.isInteractive) {
       // Screen off never counts.
-      focusTickAt = 0L
-      LimiterStore.focusSession(this)?.let { s ->
-        if (s.status == "counting") LimiterStore.saveFocus(this, s.copy(status = "paused", foreground = null))
+      sessionTickAt = 0L
+      val list = LimiterStore.sessions(this)
+      if (list.any { it.status == "counting" }) {
+        LimiterStore.saveSessions(this, list.map { if (it.status == "counting") it.copy(status = "paused") else it })
       }
       refreshNotification(now)
       return IDLE_POLL_MS
     }
 
     val fg = foregroundPackage()
-    LimiterStore.focusSession(this)?.let { tickFocus(it, fg, now) }
+    tickSessions(fg, now)
     refreshNotification(now)
 
     if (fg == null || fg == packageName) return ACTIVE_POLL_MS // user is inside RemindU
@@ -135,34 +135,43 @@ class LimiterService : Service() {
     return ACTIVE_POLL_MS
   }
 
-  /** Counts the focus budget down while a picked app is open; opens RemindU when it runs out. */
-  private fun tickFocus(s: FocusSession, fg: String?, now: Long) {
-    val distracting = fg != null && fg in s.packages
-    val elapsed = if (distracting && focusTickAt > 0) (now - focusTickAt).coerceIn(0L, MAX_TICK_MS) else 0L
-    focusTickAt = now
+  /**
+   * Updates every app timer: the one whose app is open counts down (and starts, the first time);
+   * the rest wait or pause. Opens RemindU when a timer hits zero.
+   */
+  private fun tickSessions(fg: String?, now: Long) {
+    val list = LimiterStore.sessions(this)
+    val elapsed = if (sessionTickAt > 0) (now - sessionTickAt).coerceIn(0L, MAX_TICK_MS) else 0L
+    val from = if (sessionTickAt > 0) now - elapsed else now
+    sessionTickAt = now
+    if (list.isEmpty()) return
 
-    if (s.status == "time_up") {
-      // Out of budget: keep pulling them back while they stay in a picked app.
-      if (distracting && now - lastSessionOpenAt > GATE_DEBOUNCE_MS) {
-        lastSessionOpenAt = now
-        openSession()
+    var timeUp: AppSession? = null
+    val next = list.map { s ->
+      val open = fg == s.pkg
+      if (!open) {
+        val idle = if (s.startedAt == 0L) "waiting" else "paused"
+        return@map if (s.status == "counting") s.copy(status = idle) else s
       }
-      if (s.foreground != fg) LimiterStore.saveFocus(this, s.copy(foreground = fg))
-      return
+      val used = LimiterStore.withUsage(s, from, now, MAX_TICK_MS + ACTIVE_POLL_MS)
+      if (s.status == "time_up") {
+        // Out of time: keep pulling them back while they stay in the app.
+        if (now - lastSessionOpenAt > GATE_DEBOUNCE_MS) timeUp = s
+        return@map used
+      }
+      val remaining = (s.remainingMs - elapsed).coerceAtLeast(0L)
+      val status = if (remaining == 0L) "time_up" else "counting"
+      if (status == "time_up") timeUp = s
+      used.copy(
+        remainingMs = remaining,
+        status = status,
+        startedAt = if (s.startedAt == 0L) now else s.startedAt,
+      )
     }
-
-    val remaining = (s.remainingMs - elapsed).coerceAtLeast(0L)
-    val status = when {
-      remaining == 0L -> "time_up"
-      distracting -> "counting"
-      else -> "paused"
-    }
-    if (remaining != s.remainingMs || status != s.status || fg != s.foreground) {
-      LimiterStore.saveFocus(this, s.copy(remainingMs = remaining, status = status, foreground = fg))
-    }
-    if (status == "time_up") {
+    if (next != list) LimiterStore.saveSessions(this, next)
+    timeUp?.let {
       lastSessionOpenAt = now
-      openSession()
+      openSession(it.id)
     }
   }
 
@@ -188,8 +197,10 @@ class LimiterService : Service() {
     openDeepLink("$SCHEME://gate?ruleId=${Uri.encode(ruleId)}&pkg=${Uri.encode(pkg)}&reason=$reason")
   }
 
-  /** remindu://session — the running-session screen, which shows "Time's up". */
-  private fun openSession() = openDeepLink("$SCHEME://session")
+  /** remindu://session/<id> — the session screen, which shows "Time's up". */
+  private fun openSession(id: String) = openDeepLink(sessionUrl(id))
+
+  private fun sessionUrl(id: String) = "$SCHEME://session/${Uri.encode(id)}"
 
   private fun openDeepLink(url: String) {
     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
@@ -220,12 +231,15 @@ class LimiterService : Service() {
   }
 
   private fun notificationKey(now: Long): String {
-    LimiterStore.focusSession(this)?.let { s ->
-      return when (s.status) {
+    val list = LimiterStore.sessions(this)
+    if (list.isNotEmpty()) {
+      val counting = list.firstOrNull { it.status == "counting" }
+      val timeUp = list.firstOrNull { it.status == "time_up" }
+      return when {
         // The chronometer ticks by itself; only re-post if the end time drifts.
-        "counting" -> "focus:counting:${s.foreground}:${(now + s.remainingMs) / 5_000}"
-        "paused" -> "focus:paused:${s.remainingMs / 60_000}"
-        else -> "focus:${s.status}"
+        counting != null -> "app:counting:${counting.id}:${(now + counting.remainingMs) / 5_000}"
+        timeUp != null -> "app:time_up:${timeUp.id}"
+        else -> "app:idle:${list.size}"
       }
     }
     return activeLimit(now)?.let { "limit:${it.first.id}:${it.second}" } ?: "idle"
@@ -240,9 +254,12 @@ class LimiterService : Service() {
       .minByOrNull { it.second }
 
   private fun buildNotification(now: Long): Notification {
-    val focus = LimiterStore.focusSession(this)
-    val open = if (focus != null) {
-      Intent(Intent.ACTION_VIEW, Uri.parse("$SCHEME://session")).setPackage(packageName)
+    val list = LimiterStore.sessions(this)
+    val counting = list.firstOrNull { it.status == "counting" }
+    val timeUp = list.firstOrNull { it.status == "time_up" }
+    val current = counting ?: timeUp
+    val open = if (current != null) {
+      Intent(Intent.ACTION_VIEW, Uri.parse(sessionUrl(current.id))).setPackage(packageName)
     } else {
       packageManager.getLaunchIntentForPackage(packageName)
     }
@@ -259,20 +276,19 @@ class LimiterService : Service() {
       .setOnlyAlertOnce(true)
       .setContentIntent(pi)
 
-    if (focus != null) {
-      val goal = focus.goal.ifBlank { "Focus session" }
-      when (focus.status) {
-        "counting" -> b.setContentTitle(goal)
-          .setContentText("Counting down — ${appLabel(focus.foreground)} is open")
+    if (list.isNotEmpty()) {
+      when {
+        counting != null -> b.setContentTitle("${counting.label} — counting down")
+          .setContentText(counting.goal.ifBlank { "Time left in this session" })
           .setUsesChronometer(true)
           .setChronometerCountDown(true) // system ticks the countdown for us
-          .setWhen(now + focus.remainingMs)
+          .setWhen(now + counting.remainingMs)
           .setShowWhen(true)
-        "time_up" -> b.setContentTitle("Time's up")
-          .setContentText("“$goal”")
+        timeUp != null -> b.setContentTitle("Time's up on ${timeUp.label}")
+          .setContentText(if (timeUp.goal.isBlank()) "Tap to check in" else "“${timeUp.goal}”")
           .setShowWhen(false)
-        else -> b.setContentTitle(goal)
-          .setContentText("Paused — ${formatDuration(focus.remainingMs)} left")
+        else -> b.setContentTitle("RemindU is watching ${list.size} app${if (list.size == 1) "" else "s"}")
+          .setContentText("Each timer starts when you open the app")
           .setShowWhen(false)
       }
       return b.build()
@@ -292,22 +308,6 @@ class LimiterService : Service() {
         .setShowWhen(false)
     }
     return b.build()
-  }
-
-  private fun appLabel(pkg: String?): String {
-    if (pkg == null) return "an app"
-    return try {
-      packageManager.getApplicationLabel(packageManager.getApplicationInfo(pkg, 0)).toString()
-    } catch (e: PackageManager.NameNotFoundException) {
-      pkg
-    }
-  }
-
-  private fun formatDuration(ms: Long): String {
-    val totalMin = (ms + 59_999) / 60_000
-    val h = totalMin / 60
-    val m = totalMin % 60
-    return if (h > 0) "${h}h ${m}m" else "${m}m"
   }
 
   private fun createChannel() {
