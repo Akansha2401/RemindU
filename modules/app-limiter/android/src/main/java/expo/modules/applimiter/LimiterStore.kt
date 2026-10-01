@@ -30,7 +30,9 @@ data class UsageLog(val start: Long, val end: Long)
 
 /**
  * A timer for one app. It waits until the app is first opened, then counts [remainingMs]
- * down only while that app is in the foreground and the screen is on.
+ * down only while that app is in the foreground and the screen is on. With "every X hrs",
+ * running out starts a cooldown: the app stays blocked until [cooldownUntil] on the clock,
+ * then a fresh round of [budgetMs] waits for the next open.
  */
 data class AppSession(
   val id: String,
@@ -43,9 +45,10 @@ data class AppSession(
   val everyHours: Int,
   val createdAt: Long,
   val startedAt: Long, // first time the app was opened; 0 = still waiting
-  val status: String, // waiting | counting | paused | time_up
+  val status: String, // waiting | counting | paused | time_up | cooldown
   val checkIns: Int, // times the user came back after time was up
   val logs: List<UsageLog>,
+  val cooldownUntil: Long = 0L, // epoch ms the next round opens; 0 = no cooldown
 )
 
 /**
@@ -217,7 +220,7 @@ object LimiterStore {
   @Synchronized
   fun continueSession(ctx: Context, id: String, budgetMs: Long): AppSession? {
     val s = session(ctx, id) ?: return null
-    val next = s.copy(remainingMs = budgetMs, status = "paused", checkIns = s.checkIns + 1)
+    val next = s.copy(remainingMs = budgetMs, status = "paused", checkIns = s.checkIns + 1, cooldownUntil = 0L)
     updateSession(ctx, next)
     return next
   }
@@ -229,6 +232,18 @@ object LimiterStore {
     saveSessions(ctx, sessions(ctx).filter { it.id != id })
     return s
   }
+
+  /** The time ran out: "every X hrs" blocks the app for X hours on the clock, the others wait for a check-in. */
+  fun timeUp(s: AppSession, now: Long): AppSession =
+    if (s.frequency == "every") {
+      s.copy(remainingMs = 0L, status = "cooldown", cooldownUntil = now + s.everyHours * 3_600_000L)
+    } else {
+      s.copy(remainingMs = 0L, status = "time_up")
+    }
+
+  /** The cooldown is over: a fresh round that starts counting the next time the app is open. */
+  fun endCooldown(s: AppSession): AppSession =
+    s.copy(remainingMs = s.budgetMs, status = "paused", cooldownUntil = 0L, checkIns = s.checkIns + 1)
 
   /** Extends the current usage log, or starts a new one after a gap. */
   fun withUsage(s: AppSession, from: Long, now: Long, gapMs: Long): AppSession {
@@ -258,6 +273,7 @@ object LimiterStore {
       .put("status", s.status)
       .put("checkIns", s.checkIns)
       .put("logs", logs)
+      .put("cooldownUntil", s.cooldownUntil)
   }
 
   private fun parseSession(o: JSONObject): AppSession {
@@ -266,13 +282,15 @@ object LimiterStore {
       val l = arr.getJSONArray(it)
       UsageLog(l.getLong(0), l.getLong(1))
     }
+    val budgetMs = o.getLong("budgetMs")
     return AppSession(
       id = o.getString("id"),
       pkg = o.getString("pkg"),
       label = o.optString("label", o.getString("pkg")),
       goal = o.optString("goal", ""),
-      budgetMs = o.getLong("budgetMs"),
-      remainingMs = o.getLong("remainingMs"),
+      budgetMs = budgetMs,
+      // Older builds gave "every X hrs" rounds X hours of use; a round is never longer than the length.
+      remainingMs = o.getLong("remainingMs").coerceAtMost(budgetMs),
       frequency = o.optString("frequency", "once"),
       everyHours = o.optInt("everyHours", 1),
       createdAt = o.getLong("createdAt"),
@@ -280,6 +298,7 @@ object LimiterStore {
       status = o.optString("status", "waiting"),
       checkIns = o.optInt("checkIns", 0),
       logs = logs,
+      cooldownUntil = o.optLong("cooldownUntil", 0L),
     )
   }
 }

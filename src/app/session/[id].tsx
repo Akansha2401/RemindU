@@ -18,7 +18,7 @@ import { useSessionPolling } from "@/hooks/useSessionPolling";
 import { useTheme } from "@/hooks/useTheme";
 import { formatClock, formatDuration, formatShortDate } from "@/lib/format";
 import { history$ } from "@/store/history.store";
-import { nextBudgetSec, sessionActions, sessions$ } from "@/store/session.store";
+import { sessionActions, sessions$ } from "@/store/session.store";
 import { setup$ } from "@/store/setup.store";
 import type { AppSession, UsageLog } from "@/types/guard";
 import type { ArchivedSession } from "@/types/stats";
@@ -32,7 +32,7 @@ export default function SessionScreen() {
   const loaded = useValue(() => sessions$.get() !== undefined);
   const view = useValue(() => {
     const active = sessions$[id].get();
-    if (active) return active.status === "time_up" ? "time_up" : "active";
+    if (active) return active.status === "time_up" || active.status === "cooldown" ? "time_up" : "active";
     return history$.sessions[id].get() ? "ended" : "missing";
   });
 
@@ -250,15 +250,20 @@ function TimeLog({ id }: { id: string }) {
 
 const BREATH_MS = 4000;
 
-/** Dark takeover when an app's time runs out (the service brings RemindU to the front). */
+/**
+ * Dark takeover when an app's time runs out (check-in from the block). "Every X hrs" is cooling
+ * down: it says when the next round opens and this screen leaves on its own once it does.
+ */
 function TimeUp({ id }: { id: string }) {
   const session = sessions$[id].peek();
   const goal = useValue(() => sessions$[id].goal.get() || setup$.goal.get());
   const why = useValue(setup$.why);
+  const cooldownUntil = useValue(() => (sessions$[id].status.get() === "cooldown" ? sessions$[id].cooldownUntil.get() : null));
   const busy$ = useObservable(false);
   const busy = useValue(busy$);
   if (!session) return null;
-  const nextLabel = strings.length.label(Math.round(nextBudgetSec(session) / 60));
+  const nextLabel = strings.length.label(Math.round(session.budgetSec / 60));
+  const canContinue = !cooldownUntil && session.frequency !== "once";
 
   async function keepGoing() {
     busy$.set(true);
@@ -283,16 +288,23 @@ function TimeUp({ id }: { id: string }) {
         {why ? <Text className="mt-3 text-center text-white/60">{why}</Text> : null}
         <Breath />
         <Text className="mt-2 text-center text-sm text-white/60">{copy.timeUpTitle}</Text>
-        <Text className="mt-1 text-center text-sm text-white/60">{copy.timeUpBody}</Text>
+        <Text className="mt-1 text-center text-sm text-white/60">
+          {cooldownUntil ? copy.nextRoundAt(nextLabel, formatClock(cooldownUntil)) : copy.timeUpBody}
+        </Text>
       </View>
       <View className="gap-2 pb-4">
-        {session.frequency !== "once" && (
+        {canContinue && (
           <Button disabled={busy} onPress={keepGoing}>
             <Text>{copy.keepGoing(nextLabel)}</Text>
           </Button>
         )}
-        <Button disabled={busy} variant={session.frequency === "once" ? "default" : "ghost"} onPress={finish}>
-          <Text className={session.frequency === "once" ? undefined : "text-white/70"}>{copy.finish}</Text>
+        {cooldownUntil ? (
+          <Button disabled={busy} onPress={() => router.replace("/")}>
+            <Text>{copy.backHome}</Text>
+          </Button>
+        ) : null}
+        <Button disabled={busy} variant={canContinue || cooldownUntil ? "ghost" : "default"} onPress={finish}>
+          <Text className={canContinue || cooldownUntil ? "text-white/70" : undefined}>{copy.finish}</Text>
         </Button>
       </View>
     </SafeAreaView>

@@ -2,6 +2,9 @@ import { hairlineWidth } from "nativewind/theme";
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  // The theme is toggled from Settings via setColorScheme, which needs class mode;
+  // it's also what makes the `.dark:root` variables in global.css apply.
+  darkMode: "class",
   content: [
     "./src/app/**/*.{js,jsx,ts,tsx}",
     "./src/components/**/*.{js,jsx,ts,tsx}",

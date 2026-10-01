@@ -33,6 +33,7 @@ export function createMockGuard(): Guard {
           createdAt: Date.now(),
           startedAt: null,
           status: "waiting" as const,
+          cooldownUntil: null,
           checkIns: 0,
           logs: [],
         })),

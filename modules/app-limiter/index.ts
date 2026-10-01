@@ -53,7 +53,9 @@ export type NativeAppSession = {
   everyHours: number;
   createdAt: number; // epoch ms
   startedAt: number | null; // first open; null = waiting
-  status: "waiting" | "counting" | "paused" | "time_up";
+  status: "waiting" | "counting" | "paused" | "time_up" | "cooldown";
+  /** epoch ms the next round opens ("every X hrs" after time ran out); null otherwise. */
+  cooldownUntil: number | null;
   checkIns: number;
   /** [start, end] epoch ms of each stretch the app was open. */
   logs: [number, number][];

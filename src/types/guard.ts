@@ -17,9 +17,10 @@ export type AppSessionConfig = {
 /**
  * waiting = the app hasn't been opened since the timer was added;
  * counting = the app is open; paused = opened before, closed now (or screen off);
- * time_up = the budget is used and RemindU asks for a check-in.
+ * time_up = the budget is used and RemindU asks for a check-in;
+ * cooldown = "every X hrs" ran out: the app is blocked until cooldownUntil, then a fresh round waits.
  */
-export type SessionStatus = "waiting" | "counting" | "paused" | "time_up";
+export type SessionStatus = "waiting" | "counting" | "paused" | "time_up" | "cooldown";
 
 /** [start, end] epoch ms of one stretch the app was open. */
 export type UsageLog = [number, number];
@@ -30,6 +31,8 @@ export type AppSession = AppSessionConfig & {
   /** First time the app was opened; null while waiting. */
   startedAt: number | null;
   status: SessionStatus;
+  /** When the next round opens (epoch ms) while cooling down; null otherwise. */
+  cooldownUntil: number | null;
   /** Times the user checked in after time was up and kept going. */
   checkIns: number;
   logs: UsageLog[];
@@ -59,7 +62,7 @@ export type Guard = {
   /** Adds a waiting timer per app; an app that already has one gets a fresh timer. */
   addSessions(configs: AppSessionConfig[]): Promise<void>;
   getSessions(): Promise<AppSession[]>;
-  /** After time is up: start a new budget (every X hrs / continuous). */
+  /** After time is up: start a new budget (continuous). */
   continueSession(sessionId: string, budgetSec: number): Promise<AppSession | null>;
   /** Removes the timer and returns its final state. */
   endSession(sessionId: string): Promise<AppSession | null>;

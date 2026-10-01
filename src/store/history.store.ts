@@ -28,7 +28,7 @@ export const historyActions = {
     const { remainingSec: _remaining, ...rest } = s;
     history$.sessions[s.sessionId].set({
       ...rest,
-      checkIns: s.checkIns + (s.status === "time_up" ? 1 : 0),
+      checkIns: s.checkIns + (s.status === "time_up" || s.status === "cooldown" ? 1 : 0),
       endedAt: Date.now(),
     });
   },

@@ -23,11 +23,6 @@ export type NewSessions = {
 let nextId = 0;
 const newId = () => `${Date.now().toString(36)}-${(nextId++).toString(36)}`;
 
-/** Length of the next round after a check-in: "every X hrs" waits X hours, "continuous" repeats the length. */
-export function nextBudgetSec(s: Pick<AppSession, "frequency" | "everyHours" | "budgetSec">) {
-  return s.frequency === "every" ? s.everyHours * 3600 : s.budgetSec;
-}
-
 export const sessionActions = {
   async refresh() {
     const list = await guard.getSessions();
@@ -76,11 +71,11 @@ export const sessionActions = {
     await sessionActions.add({ apps, budgetSec: s.lengthMin * 60, frequency: s.frequency, everyHours: s.everyHours });
   },
 
-  /** Time is up and the user keeps going: start the next round. */
+  /** Time is up and the user keeps going: start the next round of the same length. */
   async continue(sessionId: string) {
     const s = sessions$[sessionId].peek();
     if (!s) return;
-    const next = await guard.continueSession(sessionId, nextBudgetSec(s));
+    const next = await guard.continueSession(sessionId, s.budgetSec);
     if (next) sessions$[sessionId].set(next);
   },
 

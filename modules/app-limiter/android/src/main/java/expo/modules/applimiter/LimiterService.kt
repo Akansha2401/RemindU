@@ -159,7 +159,7 @@ class LimiterService : Service() {
 
   /**
    * Updates every app timer: the one whose app is open counts down (and starts, the first time);
-   * the rest wait or pause. Opens RemindU when a timer hits zero.
+   * the rest wait or pause. Blocks the app when its timer hits zero, and while it's cooling down.
    */
   private fun tickSessions(fg: String?, now: Long) {
     val list = LimiterStore.sessions(this)
@@ -171,25 +171,26 @@ class LimiterService : Service() {
       return
     }
 
-    val next = list.map { s ->
+    val next = list.map { prev ->
+      // Cooldowns end on the clock, whether or not the app is open.
+      val s = if (prev.status == "cooldown" && now >= prev.cooldownUntil) LimiterStore.endCooldown(prev) else prev
       val open = fg == s.pkg
       if (!open) {
         val idle = if (s.startedAt == 0L) "waiting" else "paused"
         return@map if (s.status == "counting") s.copy(status = idle) else s
       }
       // Blocked time isn't usage: the overlay covers the app.
-      if (s.status == "time_up") return@map s
+      if (s.isBlocked) return@map s
       val used = LimiterStore.withUsage(s, from, now, MAX_TICK_MS + ACTIVE_POLL_MS)
+        .copy(startedAt = if (s.startedAt == 0L) now else s.startedAt)
       val remaining = (s.remainingMs - elapsed).coerceAtLeast(0L)
-      used.copy(
-        remainingMs = remaining,
-        status = if (remaining == 0L) "time_up" else "counting",
-        startedAt = if (s.startedAt == 0L) now else s.startedAt,
-      )
+      if (remaining == 0L) LimiterStore.timeUp(used, now) else used.copy(remainingMs = remaining, status = "counting")
     }
     if (next != list) LimiterStore.saveSessions(this, next)
-    block(next.firstOrNull { it.status == "time_up" && it.pkg == fg }, now)
+    block(next.firstOrNull { it.isBlocked && it.pkg == fg }, now)
   }
+
+  private val AppSession.isBlocked get() = status == "time_up" || status == "cooldown"
 
   /**
    * Covers the app with the time's-up window while its timer is at zero and it's on screen.
@@ -276,15 +277,21 @@ class LimiterService : Service() {
     if (list.isNotEmpty()) {
       val counting = list.firstOrNull { it.status == "counting" }
       val timeUp = list.firstOrNull { it.status == "time_up" }
+      val cooldown = nextCooldown(list)
       return when {
         // The chronometer ticks by itself; only re-post if the end time drifts.
         counting != null -> "app:counting:${counting.id}:${(now + counting.remainingMs) / 5_000}"
         timeUp != null -> "app:time_up:${timeUp.id}"
+        cooldown != null -> "app:cooldown:${cooldown.id}:${cooldown.cooldownUntil}"
         else -> "app:idle:${list.size}"
       }
     }
     return activeLimit(now)?.let { "limit:${it.first.id}:${it.second}" } ?: "idle"
   }
+
+  /** The cooldown that ends soonest, if any. */
+  private fun nextCooldown(list: List<AppSession>) =
+    list.filter { it.status == "cooldown" }.minByOrNull { it.cooldownUntil }
 
   /** The limit session ending soonest, if any. */
   private fun activeLimit(now: Long): Pair<LimitRule, Long>? =
@@ -298,7 +305,8 @@ class LimiterService : Service() {
     val list = LimiterStore.sessions(this)
     val counting = list.firstOrNull { it.status == "counting" }
     val timeUp = list.firstOrNull { it.status == "time_up" }
-    val current = counting ?: timeUp
+    val cooldown = nextCooldown(list)
+    val current = counting ?: timeUp ?: cooldown
     val open = if (current != null) {
       Intent(Intent.ACTION_VIEW, Uri.parse(sessionUrl(current.id))).setPackage(packageName)
     } else {
@@ -328,6 +336,12 @@ class LimiterService : Service() {
         timeUp != null -> b.setContentTitle("Time's up on ${timeUp.label}")
           .setContentText(if (timeUp.goal.isBlank()) "Tap to check in" else "“${timeUp.goal}”")
           .setShowWhen(false)
+        cooldown != null -> b.setContentTitle("${cooldown.label} opens again at ${BlockOverlay.clock(this, cooldown.cooldownUntil)}")
+          .setContentText(if (cooldown.goal.isBlank()) "Time's up for now" else "“${cooldown.goal}”")
+          .setUsesChronometer(true)
+          .setChronometerCountDown(true)
+          .setWhen(cooldown.cooldownUntil)
+          .setShowWhen(true)
         else -> b.setContentTitle("RemindU is watching ${list.size} app${if (list.size == 1) "" else "s"}")
           .setContentText("Each timer starts when you open the app")
           .setShowWhen(false)

@@ -7,6 +7,7 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.provider.Settings
+import android.text.format.DateFormat
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
@@ -16,6 +17,7 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import java.util.Date
 
 /**
  * Full-screen "time's up" window drawn over the app whose timer ran out. It blocks touches on the
@@ -30,22 +32,29 @@ class BlockOverlay(
   private val onCheckIn: (sessionId: String) -> Unit,
   private val onLeave: () -> Unit,
 ) {
+  companion object {
+    /** "3:45 PM" or "15:45", following the phone's 12/24-hour setting. */
+    fun clock(ctx: Context, at: Long): String = DateFormat.getTimeFormat(ctx).format(Date(at))
+  }
+
   private val wm = ctx.getSystemService(Context.WINDOW_SERVICE) as WindowManager
   private var view: View? = null
-  private var shownId: String? = null
+  // Session id + status, so a time's-up block switches to the cooldown one.
+  private var shownKey: String? = null
 
   val isShowing get() = view != null
 
   /** Shows (or switches to) the block for [session]. Returns false without overlay permission. */
   fun show(session: AppSession): Boolean {
     if (!Settings.canDrawOverlays(ctx)) return false
-    if (shownId == session.id && view != null) return true
+    val key = "${session.id}:${session.status}"
+    if (shownKey == key && view != null) return true
     hide()
     val v = build(session)
     return try {
       wm.addView(v, params())
       view = v
-      shownId = session.id
+      shownKey = key
       true
     } catch (e: Exception) {
       Log.w("RemindULimiter", "Could not show block overlay", e)
@@ -62,7 +71,7 @@ class BlockOverlay(
       }
     }
     view = null
-    shownId = null
+    shownKey = null
   }
 
   private fun params(): WindowManager.LayoutParams {
@@ -121,7 +130,8 @@ class BlockOverlay(
       column.addView(text("“${s.goal}”", 28f, white, bold = true).apply { setPadding(0, dp(16f).toInt(), 0, 0) })
     }
     column.addView(text("This is what you said you wanted.", 14f, faded).apply { setPadding(0, dp(24f).toInt(), 0, 0) })
-    column.addView(text("Take one slow breath before you decide.", 14f, faded).apply { setPadding(0, dp(4f).toInt(), 0, 0) })
+    val next = if (s.status == "cooldown") "Your next round opens at ${clock(ctx, s.cooldownUntil)}." else "Take one slow breath before you decide."
+    column.addView(text(next, 14f, faded).apply { setPadding(0, dp(4f).toInt(), 0, 0) })
 
     val buttons = LinearLayout(ctx).apply {
       orientation = LinearLayout.VERTICAL

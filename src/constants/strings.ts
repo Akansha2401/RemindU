@@ -184,6 +184,7 @@ export const strings = {
     counting: "Counting down",
     paused: "Paused",
     time_up: "Time's up",
+    cooldown: "On a break",
   },
 
   sessions: {
@@ -215,10 +216,10 @@ export const strings = {
     frequencyLabel: "Check-in frequency",
     frequencyHelp: {
       once: "One check-in when the time is up, then the timer ends.",
-      every: "After each check-in, you get time again after the hours you pick.",
+      every: "When the time is up, the app stays blocked for the hours you pick. Then the same length starts again.",
       continuous: "After each check-in, the same length starts again.",
     },
-    everyLabel: "Check in every",
+    everyLabel: "Next round after",
     done: "Done",
     adding: "Adding…",
     back: "Change apps",
@@ -241,6 +242,7 @@ export const strings = {
 
   session: {
     untilCheckIn: "until check-in",
+    untilNextRound: "until next round",
     waitingHelp: "The timer starts the first time you open this app.",
     pausedHelp: "The timer only moves while this app is open.",
     countingHelp: (app: string) => `${app} is open, so the timer is running.`,
@@ -269,6 +271,7 @@ export const strings = {
     breatheIn: "Breathe in",
     breatheOut: "Breathe out",
     keepGoing: (label: string) => `Start next ${label}`,
+    nextRoundAt: (label: string, time: string) => `Your next ${label} opens at ${time}.`,
     finish: "Finish session",
     notFound: "This session doesn't exist anymore.",
     backHome: "Back to home",
@@ -364,7 +367,7 @@ export const strings = {
       },
       {
         q: "What happens when time is up?",
-        a: "RemindU comes to the front and shows your goal. Take a breath, then start the next round or finish.",
+        a: "RemindU blocks the app and shows your goal. Take a breath, then start the next round or finish. With “Every X hrs”, the app stays blocked until the next round opens.",
       },
       {
         q: "My phone keeps closing RemindU",

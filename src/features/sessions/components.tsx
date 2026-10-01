@@ -8,6 +8,7 @@ import { StatusPill, type StatusTone } from "@/components/ui/status-pill";
 import { Text } from "@/components/ui/text";
 import { strings } from "@/constants/strings";
 import { useAppIcons } from "@/hooks/useGuardApps";
+import { useNow } from "@/hooks/useNow";
 import { useTheme } from "@/hooks/useTheme";
 import { formatCountdown } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -19,10 +20,11 @@ export const STATUS_TONE: Record<SessionStatus, StatusTone> = {
   counting: "counting",
   paused: "success",
   time_up: "error",
+  cooldown: "error",
 };
 
 // Running and time's-up timers first, then the rest in the order they were added.
-const ORDER: Record<SessionStatus, number> = { counting: 0, time_up: 1, paused: 2, waiting: 3 };
+const ORDER: Record<SessionStatus, number> = { counting: 0, time_up: 1, cooldown: 2, paused: 3, waiting: 4 };
 
 /** Session ids in display order. Re-renders only when a status changes or a timer is added/removed. */
 export function useSessionIds() {
@@ -38,12 +40,28 @@ export function useSessionIds() {
 
 export const openSession = (id: string) => router.push({ pathname: "/session/[id]", params: { id } });
 
-/** Countdown text for one timer; the only thing that re-renders every second. */
+/** Countdown text for one timer (or its cooldown); the only thing that re-renders every second. */
 export function SessionTimer({ id, className }: { id: string; className?: string }) {
+  const cooldownUntil = useValue(() => (sessions$[id].status.get() === "cooldown" ? sessions$[id].cooldownUntil.get() : null));
+  if (cooldownUntil) return <CooldownTimer until={cooldownUntil} className={className} />;
+  return <UsageTimer id={id} className={className} />;
+}
+
+function UsageTimer({ id, className }: { id: string; className?: string }) {
   const remaining = useValue(() => sessions$[id].remainingSec.get() ?? 0);
+  return <TimerText sec={remaining} className={className} />;
+}
+
+/** Wall-clock time until the next round opens. */
+function CooldownTimer({ until, className }: { until: number; className?: string }) {
+  const now = useNow(1000);
+  return <TimerText sec={(until - now) / 1000} className={className} />;
+}
+
+function TimerText({ sec, className }: { sec: number; className?: string }) {
   return (
     <Text accessibilityRole="timer" className={cn("font-extrabold tabular-nums", className)}>
-      {formatCountdown(remaining)}
+      {formatCountdown(sec)}
     </Text>
   );
 }
@@ -125,6 +143,7 @@ export function SessionCard({ id }: { id: string }) {
     const s = sessions$[id].get();
     return s ? opensToday(s) : 0;
   });
+  const cooling = useValue(() => sessions$[id].status.get() === "cooldown");
   return (
     <Pressable
       accessibilityRole="button"
@@ -147,7 +166,9 @@ export function SessionCard({ id }: { id: string }) {
       <View className="flex-row items-end justify-between">
         <View>
           <SessionTimer id={id} className="text-display" />
-          <Text className="text-caption text-muted-foreground">{strings.sessions.of(length)}</Text>
+          <Text className="text-caption text-muted-foreground">
+            {cooling ? strings.session.untilNextRound : strings.sessions.of(length)}
+          </Text>
         </View>
         <Text className="text-caption text-muted-foreground">{strings.sessions.opens(opens)}</Text>
       </View>

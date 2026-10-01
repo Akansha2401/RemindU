@@ -209,6 +209,7 @@ class AppLimiterModule : Module() {
     "createdAt" to s.createdAt.toDouble(), // JS numbers are doubles
     "startedAt" to if (s.startedAt == 0L) null else s.startedAt.toDouble(),
     "status" to s.status,
+    "cooldownUntil" to if (s.cooldownUntil == 0L) null else s.cooldownUntil.toDouble(),
     "checkIns" to s.checkIns,
     "logs" to s.logs.map { listOf(it.start.toDouble(), it.end.toDouble()) },
   )
