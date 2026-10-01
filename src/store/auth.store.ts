@@ -4,9 +4,12 @@ import { persistPlugin } from "@/lib/persist";
 import { supabase } from "@/lib/supabase";
 import type { AuthState } from "@/types/auth";
 
+/**
+ * Persisted so the first render already shows the right stack; Supabase's own session
+ * (also persisted) confirms it via INITIAL_SESSION right after launch.
+ */
 export const authStore$ = observable<AuthState>({
-  // Defaults to logged in until a real login screen exists.
-  isLoggedIn: true,
+  isLoggedIn: false,
   userId: null,
 });
 
@@ -25,7 +28,6 @@ export const authActions = {
 
 // Keep the store in step with Supabase sessions.
 supabase.auth.onAuthStateChange((event, session) => {
-  if (event === "SIGNED_OUT") authActions.logOut();
-  else if (event === "SIGNED_IN") authActions.logIn(session?.user.id ?? null);
-  else if (session) authStore$.userId.set(session.user.id);
+  if (session) authActions.logIn(session.user.id);
+  else if (event === "SIGNED_OUT" || event === "INITIAL_SESSION") authActions.logOut();
 });
