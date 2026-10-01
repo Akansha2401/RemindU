@@ -21,7 +21,8 @@ import android.util.Log
 /**
  * Foreground service that watches which app is open (via UsageStatsManager) and:
  *  - runs the per-app sessions: each timer waits until its app is opened, counts down only
- *    while that app is open, logs when it was used, and brings RemindU to the front at zero;
+ *    while that app is open, logs when it was used, and at zero covers the app with a
+ *    full-screen block (BlockOverlay) until the user checks in or leaves;
  *  - enforces app limits: brings up the check-in gate when a limited app is opened
  *    without an active limit session.
  */
@@ -36,6 +37,7 @@ class LimiterService : Service() {
     private const val GATE_DEBOUNCE_MS = 2_500L
     // Never count more than this per tick, so a stalled loop can't eat the budget.
     private const val MAX_TICK_MS = 5_000L
+    private const val BLOCK_GRACE_MS = 2_000L
 
     // Must match "scheme" in app.json
     private const val SCHEME = "remindu"
@@ -57,6 +59,25 @@ class LimiterService : Service() {
   // When the session timers were last updated; 0 = don't count the gap (screen was off, service restarted).
   private var sessionTickAt = 0L
   private var notifKey: String? = null
+  // After a tap on the block, give the next screen a moment to come up before blocking again.
+  private var blockPausedUntil = 0L
+
+  private val overlay: BlockOverlay by lazy {
+    BlockOverlay(
+      this,
+      onCheckIn = { id ->
+        blockPausedUntil = System.currentTimeMillis() + BLOCK_GRACE_MS
+        // Allowed from the background because our overlay is visible at this moment.
+        openSession(id)
+        overlay.hide()
+      },
+      onLeave = {
+        blockPausedUntil = System.currentTimeMillis() + BLOCK_GRACE_MS
+        goHome()
+        overlay.hide()
+      },
+    )
+  }
 
   private val tick = object : Runnable {
     override fun run() {
@@ -92,6 +113,7 @@ class LimiterService : Service() {
 
   override fun onDestroy() {
     handler.removeCallbacks(tick)
+    overlay.hide()
     super.onDestroy()
   }
 
@@ -144,34 +166,53 @@ class LimiterService : Service() {
     val elapsed = if (sessionTickAt > 0) (now - sessionTickAt).coerceIn(0L, MAX_TICK_MS) else 0L
     val from = if (sessionTickAt > 0) now - elapsed else now
     sessionTickAt = now
-    if (list.isEmpty()) return
+    if (list.isEmpty()) {
+      overlay.hide()
+      return
+    }
 
-    var timeUp: AppSession? = null
     val next = list.map { s ->
       val open = fg == s.pkg
       if (!open) {
         val idle = if (s.startedAt == 0L) "waiting" else "paused"
         return@map if (s.status == "counting") s.copy(status = idle) else s
       }
+      // Blocked time isn't usage: the overlay covers the app.
+      if (s.status == "time_up") return@map s
       val used = LimiterStore.withUsage(s, from, now, MAX_TICK_MS + ACTIVE_POLL_MS)
-      if (s.status == "time_up") {
-        // Out of time: keep pulling them back while they stay in the app.
-        if (now - lastSessionOpenAt > GATE_DEBOUNCE_MS) timeUp = s
-        return@map used
-      }
       val remaining = (s.remainingMs - elapsed).coerceAtLeast(0L)
-      val status = if (remaining == 0L) "time_up" else "counting"
-      if (status == "time_up") timeUp = s
       used.copy(
         remainingMs = remaining,
-        status = status,
+        status = if (remaining == 0L) "time_up" else "counting",
         startedAt = if (s.startedAt == 0L) now else s.startedAt,
       )
     }
     if (next != list) LimiterStore.saveSessions(this, next)
-    timeUp?.let {
+    block(next.firstOrNull { it.status == "time_up" && it.pkg == fg }, now)
+  }
+
+  /**
+   * Covers the app with the time's-up window while its timer is at zero and it's on screen.
+   * Without overlay permission, falls back to opening RemindU (works on Android 14 and older).
+   */
+  private fun block(s: AppSession?, now: Long) {
+    if (s == null) {
+      overlay.hide()
+      return
+    }
+    if (now < blockPausedUntil) return
+    if (overlay.show(s)) return
+    if (now - lastSessionOpenAt > GATE_DEBOUNCE_MS) {
       lastSessionOpenAt = now
-      openSession(it.id)
+      openSession(s.id)
+    }
+  }
+
+  private fun goHome() {
+    try {
+      startActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    } catch (e: Exception) {
+      Log.w(TAG, "Could not go home", e)
     }
   }
 
