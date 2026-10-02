@@ -2,14 +2,12 @@ import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { useValue } from "@legendapp/state/react";
 import { AppIcon } from "@/components/app-icon";
-import { Icon } from "@/components/ui/icon";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { StatusPill, type StatusTone } from "@/components/ui/status-pill";
 import { Text } from "@/components/ui/text";
 import { strings } from "@/constants/strings";
 import { useAppIcons } from "@/hooks/useGuardApps";
 import { useNow } from "@/hooks/useNow";
-import { useTheme } from "@/hooks/useTheme";
 import { formatCountdown } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { sessions$ } from "@/store/session.store";
@@ -86,39 +84,22 @@ function useSessionInfo(id: string) {
   return { label, icon };
 }
 
-/** Compact row for Home. */
-export function SessionRow({ id }: { id: string }) {
-  const theme = useTheme();
+/** Square card: app icon with a small primary timer badge underneath, for Home. */
+export function SessionTile({ id, size }: { id: string; size: number }) {
   const { label, icon } = useSessionInfo(id);
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={() => openSession(id)}
-      className="gap-3 rounded-input bg-card px-4 py-3.5 active:opacity-80"
+      style={{ width: size, height: size }}
+      className="items-center justify-center gap-2 rounded-input bg-card shadow-card active:opacity-80"
     >
-      <View className="flex-row items-center gap-3">
-        <AppIcon uri={icon} size={40} label={label} />
-        <View className="flex-1">
-          <Text numberOfLines={1} className="font-bold">
-            {label}
-          </Text>
-          <StatusText id={id} />
-        </View>
-        <SessionTimer id={id} className="text-section" />
-        <Icon name="chevronRight" size={16} color={theme.mutedForeground} />
+      <AppIcon uri={icon} size={Math.round(size * 0.5)} label={label} />
+      <View className="rounded-full bg-primary px-2 py-0.5">
+        <SessionTimer id={id} className="text-caption text-primary-foreground" />
       </View>
-      <SessionProgress id={id} />
     </Pressable>
-  );
-}
-
-function StatusText({ id }: { id: string }) {
-  const status = useValue(() => sessions$[id].status.get() ?? "waiting");
-  return (
-    <Text className={cn("text-caption", status === "time_up" ? "text-destructive" : "text-muted-foreground")}>
-      {strings.status[status]}
-    </Text>
   );
 }
 
@@ -149,7 +130,7 @@ export function SessionCard({ id }: { id: string }) {
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={() => openSession(id)}
-      className="gap-4 rounded-card bg-card p-4 active:opacity-80"
+      className="gap-4 rounded-card bg-card shadow-card p-4 active:opacity-80"
     >
       <View className="flex-row items-center gap-3">
         <AppIcon uri={icon} size={44} label={label} />

@@ -1,11 +1,10 @@
 import { Pressable, View } from "react-native";
-import { router } from "expo-router";
 import type { BottomTabBarProps } from "expo-router/tabs";
+import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import { Icon, type IconName } from "./ui/icon";
-import { Text } from "./ui/text";
 
 type TabMeta = { icon: IconName; label: string };
 
@@ -15,7 +14,7 @@ type TabBarProps = BottomTabBarProps & {
   action: { label: string; onPress: () => void };
 };
 
-/** Four tabs with a terracotta + button in the middle. */
+/** Floating pill with four line-icon tabs and a coral + button in the middle (DESIGN.md). */
 export function TabBar({ state, navigation, tabs, action }: TabBarProps) {
   const insets = useSafeAreaInsets();
   const routes = state.routes.filter((r) => tabs[r.name]);
@@ -37,10 +36,8 @@ export function TabBar({ state, navigation, tabs, action }: TabBarProps) {
   };
 
   return (
-    <View
-      className="flex-row items-center border-t border-border bg-card px-2 pt-2"
-      style={{ paddingBottom: Math.max(insets.bottom, 10) }}
-    >
+    <View className="bg-background px-6 pt-2" style={{ paddingBottom: Math.max(insets.bottom, 12) + 8 }}>
+     <View className="flex-row items-center self-center rounded-full border border-white/60 bg-card/90 px-4 py-3 shadow-nav" style={{ width: "100%", maxWidth: 360 }}>
       {routes.slice(0, half).map(renderTab)}
       <View className="flex-1 items-center">
         <Pressable
@@ -48,12 +45,13 @@ export function TabBar({ state, navigation, tabs, action }: TabBarProps) {
           accessibilityLabel={action.label}
           onPress={action.onPress}
           hitSlop={6}
-          className="-mt-7 h-14 w-14 items-center justify-center rounded-full bg-primary shadow-md shadow-black/20 active:bg-primary-hover"
+          className="h-12 w-12 items-center justify-center rounded-full bg-primary shadow-cta active:scale-[0.98] active:bg-primary-hover"
         >
-          <Icon name="plus" size={26} color="#FFFFFF" />
+          <Icon name="plus" size={24} color="#FFFFFF" strokeWidth={2} />
         </Pressable>
       </View>
       {routes.slice(half).map(renderTab)}
+     </View>
     </View>
   );
 }
@@ -66,12 +64,15 @@ function TabButton({ meta, focused, onPress }: { meta: TabMeta; focused: boolean
       accessibilityState={{ selected: focused }}
       accessibilityLabel={meta.label}
       onPress={onPress}
-      className="flex-1 items-center gap-1 py-1"
+      className="flex-1 items-center gap-1.5 py-1"
     >
-      <Icon name={meta.icon} size={22} color={focused ? theme.primary : theme.mutedForeground} />
-      <Text className={cn("text-[11px] font-semibold", focused ? "text-primary" : "text-muted-foreground")}>
-        {meta.label}
-      </Text>
+      <Icon
+        name={meta.icon}
+        size={24}
+        strokeWidth={focused ? 2 : 1.5}
+        color={focused ? theme.primary : theme.switchOff}
+      />
+      <View className={cn("h-1 w-1 rounded-full", focused ? "bg-primary" : "bg-transparent")} />
     </Pressable>
   );
 }

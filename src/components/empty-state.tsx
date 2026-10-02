@@ -7,7 +7,7 @@ import { useTheme } from "@/hooks/useTheme";
 export function EmptyState({ icon, title, body, children }: { icon: IconName; title: string; body: string; children?: ReactNode }) {
   const theme = useTheme();
   return (
-    <View className="items-center rounded-card bg-card px-6 py-8">
+    <View className="items-center rounded-card bg-card shadow-card px-6 py-8">
       <View className="mb-3 h-12 w-12 items-center justify-center rounded-full bg-accent">
         <Icon name={icon} size={22} color={theme.accentForeground} />
       </View>

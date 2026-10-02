@@ -39,12 +39,17 @@ export async function signInWithGoogle() {
   });
   if (error) throw error;
 
+  console.log("AUTH_REDIRECT", AUTH_REDIRECT);
+
   const result = await WebBrowser.openAuthSessionAsync(data.url, AUTH_REDIRECT);
   if (result.type !== "success") return false;
 
   const { queryParams } = Linking.parse(result.url);
   const code = typeof queryParams?.code === "string" ? queryParams.code : null;
-  if (!code) throw new Error(String(queryParams?.error_description ?? "No code returned"));
+  if (!code)
+    throw new Error(
+      String(queryParams?.error_description ?? "No code returned"),
+    );
 
   prepareSetup();
   const session = await supabase.auth.exchangeCodeForSession(code);
@@ -74,5 +79,7 @@ async function afterSignIn(userId: string) {
     if (answered) onboarding$.syncPending.set(true);
     console.warn("onboarding sync failed", e);
   }
-  await sessionActions.seedFromSetup().catch((e) => console.warn("could not start timers", e));
+  await sessionActions
+    .seedFromSetup()
+    .catch((e) => console.warn("could not start timers", e));
 }

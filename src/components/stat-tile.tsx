@@ -8,22 +8,25 @@ type StatTileProps = {
   icon: IconName;
   label: string;
   value: string;
-  /** Replaces the value text, e.g. an app icon with its name. */
-  children?: ReactNode;
+  /** Replaces the icon beside the value, e.g. the most-used app's icon. */
+  leading?: ReactNode;
 };
 
-/** One figure in a stats row: icon, value, small label. */
-export function StatTile({ icon, label, value, children }: StatTileProps) {
+/** One figure in a stats row: icon beside the value, small label below. */
+export function StatTile({ icon, label, value, leading }: StatTileProps) {
   const theme = useTheme();
   return (
     <View className="flex-1 items-start gap-1.5">
-      <Icon name={icon} size={18} color={theme.primary} />
-      {children ?? (
-        <Text numberOfLines={1} className="text-section font-extrabold">
+      <View className="flex-row items-center gap-2">
+        {leading ?? <Icon name={icon} size={22} color={theme.foreground} />}
+        <Text numberOfLines={1} className="shrink text-section font-extrabold">
           {value}
         </Text>
-      )}
-      <Text numberOfLines={2} className="text-caption text-muted-foreground">
+      </View>
+      <Text
+        numberOfLines={1}
+        className="text-label font-bold uppercase text-muted-foreground"
+      >
         {label}
       </Text>
     </View>

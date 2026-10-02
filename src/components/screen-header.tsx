@@ -16,10 +16,10 @@ type ScreenHeaderProps = {
 
 export function ScreenHeader({ title, subtitle, back, right }: ScreenHeaderProps) {
   return (
-    <View className="px-5 pb-3 pt-2">
+    <View className="px-6 pb-4 pt-2">
       <View className="flex-row items-center gap-3">
         {back && <IconButton icon="back" accessibilityLabel={strings.common.back} onPress={() => router.back()} />}
-        <Text accessibilityRole="header" className={back ? "flex-1 text-section font-extrabold" : "flex-1 text-title font-extrabold"}>
+        <Text accessibilityRole="header" className={back ? "flex-1 text-section font-extrabold" : "flex-1 text-title font-medium"}>
           {title}
         </Text>
         {right}

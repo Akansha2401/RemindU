@@ -62,7 +62,7 @@ function Past() {
   return (
     <View className="mt-8">
       <Text className="mb-3 text-section font-extrabold">{copy.past}</Text>
-      <View className="overflow-hidden rounded-card bg-card">
+      <View className="overflow-hidden rounded-card bg-card shadow-card">
         {past.map((s) => {
           const used = s.logs.reduce((ms, [a, b]) => ms + (b - a), 0);
           return (

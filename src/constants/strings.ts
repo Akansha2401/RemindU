@@ -167,9 +167,9 @@ export const strings = {
   home: {
     greeting: { morning: "Good morning", afternoon: "Good afternoon", evening: "Good evening", night: "Good night" },
     greetingName: (greeting: string, name: string) => `${greeting}, ${name}`,
-    streak: "Day streak",
-    screenTime: "Screen time today",
-    mostUsed: "Most used app",
+    streak: "Streak",
+    screenTime: "Screen time",
+    mostUsed: "Most used",
     none: "—",
     noAccess: "Needs usage access",
     appsTitle: "Your apps",

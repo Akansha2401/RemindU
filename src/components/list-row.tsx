@@ -24,13 +24,13 @@ export function ListRow({ icon, label, hint, right, onPress, destructive }: List
       accessibilityRole={onPress ? "button" : undefined}
       disabled={!onPress}
       onPress={onPress}
-      className="flex-row items-center gap-3 px-4 py-3.5 active:bg-muted"
+      className="flex-row items-center gap-4 px-4 py-3 active:bg-black/[0.04]"
     >
-      <View className={cn("h-9 w-9 items-center justify-center rounded-tile", destructive ? "bg-error-bg" : "bg-background")}>
-        <Icon name={icon} size={18} color={tint} />
+      <View className={cn("h-12 w-12 items-center justify-center rounded-full border border-black/[0.02] shadow-badge", destructive ? "bg-error-bg" : "bg-card")}>
+        <Icon name={icon} size={20} color={tint} strokeWidth={2} />
       </View>
       <View className="flex-1">
-        <Text className={cn("font-semibold", destructive && "text-destructive")}>{label}</Text>
+        <Text className={cn("font-medium", destructive && "text-destructive")}>{label}</Text>
         {hint ? <Text className="text-caption text-muted-foreground">{hint}</Text> : null}
       </View>
       {right ?? (onPress && !destructive ? <Icon name="chevronRight" size={16} color={theme.mutedForeground} /> : null)}
@@ -41,8 +41,8 @@ export function ListRow({ icon, label, hint, right, onPress, destructive }: List
 export function ListGroup({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <View className="mb-6">
-      {title ? <Text className="mb-2 ml-1 text-label font-bold text-cocoa">{title}</Text> : null}
-      <View className="overflow-hidden rounded-card bg-card">{children}</View>
+      {title ? <Text className="mb-3 ml-1 text-eyebrow font-bold uppercase text-muted-foreground">{title}</Text> : null}
+      <View className="overflow-hidden rounded-card bg-card shadow-card">{children}</View>
     </View>
   );
 }

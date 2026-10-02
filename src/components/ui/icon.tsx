@@ -1,7 +1,7 @@
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 import { useTheme } from "@/hooks/useTheme";
 
-// Line icons on a 20px grid: 1.7 stroke, round caps and joins (RemindU Design System v1).
+// Line icons on a 20px grid: 1.5 stroke (2 when active), round caps and joins (DESIGN.md).
 const ICONS = {
   back: <Path d="M12.5 3.5L6 10l6.5 6.5" />,
   home: <Path d="M3 9l7-6 7 6v8a1 1 0 01-1 1H4a1 1 0 01-1-1V9z" />,
@@ -143,9 +143,10 @@ type IconProps = {
   size?: number;
   /** Defaults to the theme's foreground colour. */
   color?: string;
+  strokeWidth?: number;
 };
 
-export function Icon({ name, size = 18, color }: IconProps) {
+export function Icon({ name, size = 18, color, strokeWidth = 1.5 }: IconProps) {
   const theme = useTheme();
   const c = color ?? theme.foreground;
   return (
@@ -156,7 +157,7 @@ export function Icon({ name, size = 18, color }: IconProps) {
       fill="none"
       color={c}
       stroke={c}
-      strokeWidth={1.7}
+      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
     >

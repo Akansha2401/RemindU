@@ -3,11 +3,11 @@ import { Stack, ThemeProvider } from "expo-router";
 import "../global.css";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
-import { PlusJakartaSans_400Regular } from "@expo-google-fonts/plus-jakarta-sans/400Regular";
-import { PlusJakartaSans_500Medium } from "@expo-google-fonts/plus-jakarta-sans/500Medium";
-import { PlusJakartaSans_600SemiBold } from "@expo-google-fonts/plus-jakarta-sans/600SemiBold";
-import { PlusJakartaSans_700Bold } from "@expo-google-fonts/plus-jakarta-sans/700Bold";
-import { PlusJakartaSans_800ExtraBold } from "@expo-google-fonts/plus-jakarta-sans/800ExtraBold";
+import { Inter_400Regular } from "@expo-google-fonts/inter/400Regular";
+import { Inter_500Medium } from "@expo-google-fonts/inter/500Medium";
+import { Inter_600SemiBold } from "@expo-google-fonts/inter/600SemiBold";
+import { Inter_700Bold } from "@expo-google-fonts/inter/700Bold";
+import { InterTight_500Medium } from "@expo-google-fonts/inter-tight/500Medium";
 import { useValue } from "@legendapp/state/react";
 import { authStore$ } from "@/store/auth.store";
 import { prefs$ } from "@/store/prefs.store";
@@ -35,13 +35,13 @@ export default function RootLayout() {
   const { colorScheme, setColorScheme } = useColorScheme();
   const scheme = colorScheme === "dark" ? "dark" : "light";
 
-  // Plus Jakarta Sans 400–800 (RemindU Design System v1). Keep the splash up until loaded.
+  // Inter 400–700 + Inter Tight Medium (DESIGN.md). Keep the splash up until loaded.
   const [fontsLoaded, fontError] = useFonts({
-    PlusJakartaSans_400Regular,
-    PlusJakartaSans_500Medium,
-    PlusJakartaSans_600SemiBold,
-    PlusJakartaSans_700Bold,
-    PlusJakartaSans_800ExtraBold,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    InterTight_500Medium,
   });
   const ready = fontsLoaded || !!fontError;
 
@@ -106,8 +106,8 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen name="auth/callback" />
-          <PortalHost />
         </Stack>
+        <PortalHost />
       </ThemeProvider>
     </QueryClientProvider>
   );

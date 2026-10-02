@@ -3,16 +3,16 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 import { TextClassContext } from "./text";
 
-// Buttons are always full pills (RemindU Design System v1).
+// Buttons are always full pills (DESIGN.md).
 const buttonVariants = cva("flex-row items-center justify-center gap-2 rounded-full", {
   variants: {
     variant: {
-      /** Terracotta: the one primary action on a screen. */
-      default: "bg-primary active:bg-primary-hover",
-      /** Espresso. */
+      /** Coral with a brand glow: the one primary action on a screen. */
+      default: "bg-primary shadow-cta active:scale-[0.98] active:bg-primary-hover",
+      /** Ink. */
       secondary: "bg-secondary",
       /** White on cream, for neutral choices like "Continue with email". */
-      outline: "bg-card",
+      outline: "bg-card shadow-badge",
       /** Dashed utility button. */
       tertiary: "border border-dashed border-dashline",
       ghost: "",
@@ -31,9 +31,9 @@ const buttonVariants = cva("flex-row items-center justify-center gap-2 rounded-f
 const buttonTextVariants = cva("", {
   variants: {
     variant: {
-      default: "font-bold text-primary-foreground",
-      secondary: "font-bold text-secondary-foreground",
-      outline: "font-bold text-foreground",
+      default: "font-semibold text-primary-foreground",
+      secondary: "font-semibold text-secondary-foreground",
+      outline: "font-semibold text-foreground",
       tertiary: "font-semibold text-muted-foreground",
       ghost: "font-semibold text-muted-foreground",
       link: "font-semibold text-primary",

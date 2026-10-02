@@ -74,7 +74,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
     <View className="mb-6">
       <Text className="text-section font-extrabold">{title}</Text>
       {hint ? <Text className="mt-0.5 text-caption text-muted-foreground">{hint}</Text> : null}
-      <View className="mt-3 rounded-card bg-card p-4">{children}</View>
+      <View className="mt-3 rounded-card bg-card shadow-card p-4">{children}</View>
     </View>
   );
 }

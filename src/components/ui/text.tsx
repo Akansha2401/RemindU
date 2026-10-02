@@ -9,7 +9,7 @@ export const TextClassContext = createContext<string | undefined>(undefined);
 const WEIGHT = /\bfont-(normal|medium|semibold|bold|extrabold)\b/g;
 
 /**
- * Picks the Plus Jakarta Sans file for the last `font-*` weight class. Android can't synthesise
+ * Picks the Inter / Inter Tight file for the last `font-*` weight class. Android can't synthesise
  * weights for custom fonts, so each weight is its own family and fontWeight is reset to normal.
  */
 export function fontFamilyFor(className: string) {
@@ -19,7 +19,7 @@ export function fontFamilyFor(className: string) {
 
 export function Text({ className, style, ...props }: TextProps) {
   const contextClass = useContext(TextClassContext);
-  const merged = cn("text-body text-foreground", contextClass, className);
+  const merged = cn("text-body font-medium text-foreground", contextClass, className);
   return (
     <RNText
       className={merged}

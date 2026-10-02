@@ -11,8 +11,8 @@ type CountdownRingProps = {
   children?: ReactNode;
 };
 
-/** Terracotta ring on a faint espresso track (RemindU Design System v1). */
-export function CountdownRing({ progress, size = 240, stroke = 12, children }: CountdownRingProps) {
+/** Coral ring on a sunken track (DESIGN.md). */
+export function CountdownRing({ progress, size = 240, stroke = 8, children }: CountdownRingProps) {
   const theme = useTheme();
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;

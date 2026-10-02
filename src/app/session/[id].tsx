@@ -168,7 +168,7 @@ function Details({ id }: { id: string }) {
   return (
     <View className="mt-6">
       <Text className="mb-2 text-label font-bold text-cocoa">{copy.details}</Text>
-      <View className="rounded-card bg-card px-4 py-1">
+      <View className="rounded-card bg-card shadow-card px-4 py-1">
         {rows.map(([k, v], i) => (
           <View key={k} className={i ? "flex-row justify-between border-t border-border py-3" : "flex-row justify-between py-3"}>
             <Text className="text-walnut">{k}</Text>
@@ -211,7 +211,7 @@ function TimeLog({ id }: { id: string }) {
     <View className="mt-6">
       <Text className="mb-2 text-label font-bold text-cocoa">{copy.logTitle}</Text>
       {groups.length === 0 ? (
-        <View className="rounded-card bg-card px-4 py-4">
+        <View className="rounded-card bg-card shadow-card px-4 py-4">
           <Text className="text-sm text-muted-foreground">{copy.logEmpty}</Text>
         </View>
       ) : (
@@ -221,7 +221,7 @@ function TimeLog({ id }: { id: string }) {
               <Text className="mb-1.5 ml-1 text-caption font-bold uppercase tracking-widest text-muted-foreground">
                 {g.day}
               </Text>
-              <View className="rounded-card bg-card px-4 py-1">
+              <View className="rounded-card bg-card shadow-card px-4 py-1">
                 {g.logs.map(([a, b], i) => {
                   const live = open && g === groups[0] && i === 0;
                   return (

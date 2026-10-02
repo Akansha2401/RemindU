@@ -58,7 +58,7 @@ function AccountForm({ profile }: { profile: Profile }) {
       </Button>
       {update.error ? <Text className="mt-2 text-center text-destructive">{strings.common.tryAgain}</Text> : null}
 
-      <View className="mt-8 rounded-card bg-card px-4 py-1">
+      <View className="mt-8 rounded-card bg-card shadow-card px-4 py-1">
         {rows.map(([k, v], i) => (
           <View key={k} className={i ? "flex-row justify-between gap-4 border-t border-border py-3" : "flex-row justify-between gap-4 py-3"}>
             <Text className="text-walnut">{k}</Text>

@@ -16,7 +16,7 @@ export function ProgressBar({ value, accessibilityLabel, className }: ProgressBa
       accessibilityRole="progressbar"
       accessibilityLabel={accessibilityLabel}
       accessibilityValue={{ min: 0, max: 100, now: pct }}
-      className={cn("h-1 overflow-hidden rounded-full bg-muted", className)}
+      className={cn("h-1.5 overflow-hidden rounded-full bg-muted", className)}
     >
       <View className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
     </View>

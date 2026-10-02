@@ -1,4 +1,4 @@
-import { ScrollView, View } from "react-native";
+import { ScrollView, useWindowDimensions, View } from "react-native";
 import { useValue } from "@legendapp/state/react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { strings } from "@/constants/strings";
 import { useProfile } from "@/features/profile/api";
-import { SessionRow, useSessionIds } from "@/features/sessions/components";
+import { SessionTile, useSessionIds } from "@/features/sessions/components";
 import { useScreenTimeOnFocus, useStat } from "@/features/stats/hooks";
 import { dayStreak, greetingFor, todayScreenTime } from "@/features/stats/logic";
 import { useAppIcons } from "@/hooks/useGuardApps";
@@ -68,27 +68,26 @@ function TodayStats() {
   const fallback = usage ? copy.none : copy.noAccess;
 
   return (
-    <View className="mb-6 flex-row gap-3 rounded-card bg-card p-4">
+    <View className="mb-6 flex-row gap-3 rounded-card bg-card shadow-card p-4">
       <StatTile icon="flame" label={copy.streak} value={String(streak)} />
       <View className="w-hairline bg-border" />
       <StatTile icon="phone" label={copy.screenTime} value={today.totalMs != null ? formatDuration(today.totalMs) : fallback} />
       <View className="w-hairline bg-border" />
-      <StatTile icon="star" label={copy.mostUsed} value={fallback}>
-        {top ? (
-          <View className="flex-row items-center gap-1.5">
-            <AppIcon uri={icons[top.packageName]} size={22} label={top.label} />
-            <Text numberOfLines={1} className="flex-1 font-extrabold">
-              {top.label}
-            </Text>
-          </View>
-        ) : undefined}
-      </StatTile>
+      <StatTile
+        icon="star"
+        label={copy.mostUsed}
+        value={top ? top.label : fallback}
+        leading={top ? <AppIcon uri={icons[top.packageName]} size={24} label={top.label} /> : undefined}
+      />
     </View>
   );
 }
 
 function Apps() {
   const ids = useSessionIds();
+  const { width } = useWindowDimensions();
+  // Four squares per row: screen minus the px-5 gutters and three 10px gaps.
+  const tile = Math.floor((width - 40 - 30) / 4);
   return (
     <View>
       <View className="mb-3 flex-row items-center justify-between">
@@ -100,9 +99,9 @@ function Apps() {
         )}
       </View>
       {ids.length ? (
-        <View className="gap-2.5">
+        <View className="flex-row flex-wrap gap-2.5">
           {ids.map((id) => (
-            <SessionRow key={id} id={id} />
+            <SessionTile key={id} id={id} size={tile} />
           ))}
         </View>
       ) : (

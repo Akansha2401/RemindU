@@ -35,7 +35,7 @@ export function PermissionCard(props: PermissionCardProps) {
   }
 
   return (
-    <View className="mb-3 rounded-card bg-card p-4">
+    <View className="mb-3 rounded-card bg-card shadow-card p-4">
       <View className="flex-row items-center gap-3">
         <View className="h-10 w-10 items-center justify-center rounded-tile bg-background">
           <Icon name={props.icon} />

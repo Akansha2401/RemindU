@@ -62,14 +62,16 @@ module.exports = {
       },
       // Type scale from the design system (size / line height)
       fontSize: {
-        display: ["34px", "40px"],
-        quote: ["30px", "36px"],
-        title: ["28px", "34px"],
-        section: ["22px", "28px"],
-        button: ["16px", "20px"],
-        body: ["15px", "22px"],
+        display: ["32px", { lineHeight: "35px", letterSpacing: "-0.64px" }],
+        quote: ["28px", { lineHeight: "34px", letterSpacing: "-0.56px" }],
+        title: ["26px", { lineHeight: "31px", letterSpacing: "-0.52px" }],
+        section: ["20px", { lineHeight: "26px", letterSpacing: "-0.4px" }],
+        button: ["17px", { lineHeight: "22px", letterSpacing: "0.17px" }],
+        body: ["15px", "21px"],
         label: ["13px", "18px"],
         caption: ["12px", "16px"],
+        // tracked uppercase section voice (pair with `font-bold uppercase text-muted-foreground`)
+        eyebrow: ["10px", { lineHeight: "10px", letterSpacing: "1.0px" }],
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -79,7 +81,13 @@ module.exports = {
         tile: "12px", // icon tile
         row: "14px", // inline row
         input: "16px", // input, list row
-        card: "20px", // card
+        card: "24px", // card
+      },
+      boxShadow: {
+        card: "0 8px 30px rgba(0, 0, 0, 0.03)",
+        badge: "0 2px 10px rgba(0, 0, 0, 0.04)",
+        nav: "0 12px 40px rgba(0, 0, 0, 0.08)",
+        cta: "0 4px 14px rgba(255, 90, 95, 0.3)",
       },
       borderWidth: {
         hairline: hairlineWidth(),
