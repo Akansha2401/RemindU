@@ -1,13 +1,8 @@
-import React, { useEffect } from "react";
-import { router, Tabs } from "expo-router";
-import { useValue } from "@legendapp/state/react";
+import React from "react";
+import { Tabs } from "expo-router";
 import { openAddSheet, TabBar } from "@/components/tab-bar";
-import { FLAGS } from "@/config/flags";
 import { strings } from "@/constants/strings";
-import { useLimitSync } from "@/features/limiter/hooks";
-import { flushPendingOnboarding } from "@/features/onboarding/sync";
-import { authStore$ } from "@/store/auth.store";
-import { onboarding$ } from "@/store/onboarding.store";
+import { useTabsSetup } from "@/hooks/useTabsSetup";
 
 const TABS = {
   index: { icon: "home", label: strings.tabs.home },
@@ -16,19 +11,9 @@ const TABS = {
   profile: { icon: "user", label: strings.tabs.profile },
 } as const;
 
+/** Android (and web): floating pill tab bar. iOS uses `_layout.ios.tsx`. */
 const TabLayout = () => {
-  useLimitSync();
-  const userId = useValue(authStore$.userId);
-
-  // Retry pushing onboarding answers if sign-in happened offline.
-  useEffect(() => {
-    if (userId) flushPendingOnboarding(userId).catch((e) => console.warn("onboarding sync retry failed", e));
-  }, [userId]);
-
-  // Screen 8 (trial) is behind a flag and shown once, after sign-in.
-  useEffect(() => {
-    if (FLAGS.trialScreen && !onboarding$.trialSeen.peek()) router.push("/trial");
-  }, []);
+  useTabsSetup();
 
   return (
     <Tabs

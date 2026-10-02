@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "@/components/empty-state";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
-import { IconButton } from "@/components/ui/icon-button";
+import { GlassIconButton } from "@/components/ui/glass-icon-button";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Text } from "@/components/ui/text";
@@ -29,7 +29,7 @@ export default function GoalsScreen() {
       <ScreenHeader
         title={copy.title}
         subtitle={copy.subtitle}
-        right={<IconButton icon="plus" shape="tile" accessibilityLabel={copy.add} onPress={() => router.push("/goals/new")} />}
+        right={<GlassIconButton icon="plus" accessibilityLabel={copy.add} onPress={() => router.push("/goals/new")} />}
       />
       <ScrollView
         contentContainerClassName="gap-3 px-5 pb-10"

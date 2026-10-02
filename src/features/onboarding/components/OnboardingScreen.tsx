@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { KeyboardAvoidingView, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { IconButton } from "@/components/ui/icon-button";
+import { GlassIconButton } from "@/components/ui/glass-icon-button";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { Text } from "@/components/ui/text";
 import { strings } from "@/constants/strings";
@@ -31,7 +31,7 @@ export function OnboardingScreen({ step, title, subtitle, footer, headerRight, o
       <KeyboardAvoidingView behavior="padding" className="flex-1">
         <View className="flex-row items-center gap-4 px-5 pb-2 pt-2">
           {step !== "welcome" && (
-            <IconButton icon="back" accessibilityLabel={strings.common.back} onPress={onBack ?? (() => goBack(step))} />
+            <GlassIconButton shape="circle" icon="back" accessibilityLabel={strings.common.back} onPress={onBack ?? (() => goBack(step))} />
           )}
           <View className="flex-1">
             {progress !== null && (

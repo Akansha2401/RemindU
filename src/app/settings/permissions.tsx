@@ -1,7 +1,7 @@
 import { ScrollView, View } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { IconButton } from "@/components/ui/icon-button";
+import { GlassIconButton } from "@/components/ui/glass-icon-button";
 import { Text } from "@/components/ui/text";
 import { strings } from "@/constants/strings";
 import { PermissionList } from "@/features/onboarding/components/PermissionList";
@@ -11,7 +11,7 @@ export default function PermissionsSettingsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <View className="flex-row items-center gap-3 px-5 pb-2 pt-2">
-        <IconButton icon="back" accessibilityLabel={strings.common.back} onPress={() => router.back()} />
+        <GlassIconButton shape="circle" icon="back" accessibilityLabel={strings.common.back} onPress={() => router.back()} />
         <Text accessibilityRole="header" className="text-section font-extrabold">
           {strings.settings.permissions}
         </Text>

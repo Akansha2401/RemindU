@@ -10,6 +10,7 @@ import { PermissionBanner } from "@/components/permission-banner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Chip } from "@/components/ui/chip";
+import { GlassIconButton } from "@/components/ui/glass-icon-button";
 import { IconButton } from "@/components/ui/icon-button";
 import { SearchInput } from "@/components/ui/search-input";
 import { Text } from "@/components/ui/text";
@@ -68,12 +69,12 @@ export default function AddSheet() {
         </View>
         <View className="flex-row items-center gap-3 px-5 pb-3 pt-3">
           {step === "setup" && (
-            <IconButton icon="back" accessibilityLabel={copy.back} onPress={() => form$.step.set("pick")} />
+            <GlassIconButton shape="circle" icon="back" accessibilityLabel={copy.back} onPress={() => form$.step.set("pick")} />
           )}
           <Text accessibilityRole="header" className="flex-1 text-section font-extrabold">
             {step === "pick" ? copy.title : copy.setupTitle}
           </Text>
-          <IconButton icon="close" accessibilityLabel={strings.common.back} onPress={() => router.back()} />
+          <GlassIconButton shape="circle" icon="close" accessibilityLabel={strings.common.back} onPress={() => router.back()} />
         </View>
         {step === "pick" ? <PickApps form$={form$} /> : <Setup form$={form$} />}
       </Animated.View>

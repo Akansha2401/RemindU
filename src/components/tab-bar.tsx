@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import { Icon, type IconName } from "./ui/icon";
+import { Text } from "./ui/text";
 
 type TabMeta = { icon: IconName; label: string };
 
@@ -14,7 +15,7 @@ type TabBarProps = BottomTabBarProps & {
   action: { label: string; onPress: () => void };
 };
 
-/** Floating pill with four line-icon tabs and a coral + button in the middle (DESIGN.md). */
+/** Floating pill with four labelled line-icon tabs and a coral + button in the middle (DESIGN.md). */
 export function TabBar({ state, navigation, tabs, action }: TabBarProps) {
   const insets = useSafeAreaInsets();
   const routes = state.routes.filter((r) => tabs[r.name]);
@@ -36,22 +37,22 @@ export function TabBar({ state, navigation, tabs, action }: TabBarProps) {
   };
 
   return (
-    <View className="bg-background px-6 pt-2" style={{ paddingBottom: Math.max(insets.bottom, 12) + 8 }}>
-     <View className="flex-row items-center self-center rounded-full border border-white/60 bg-card/90 px-4 py-3 shadow-nav" style={{ width: "100%", maxWidth: 360 }}>
-      {routes.slice(0, half).map(renderTab)}
-      <View className="flex-1 items-center">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={action.label}
-          onPress={action.onPress}
-          hitSlop={6}
-          className="h-12 w-12 items-center justify-center rounded-full bg-primary shadow-cta active:scale-[0.98] active:bg-primary-hover"
-        >
-          <Icon name="plus" size={24} color="#FFFFFF" strokeWidth={2} />
-        </Pressable>
+    <View className="bg-background px-5 pt-2" style={{ paddingBottom: Math.max(insets.bottom, 12) + 8 }}>
+      <View className="h-16 flex-row items-center self-center rounded-full bg-card px-3 shadow-nav" style={{ width: "100%", maxWidth: 400 }}>
+        {routes.slice(0, half).map(renderTab)}
+        <View className="flex-1 items-center">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={action.label}
+            onPress={action.onPress}
+            hitSlop={6}
+            className="h-12 w-12 items-center justify-center rounded-full bg-primary shadow-cta active:scale-[0.98] active:bg-primary-hover"
+          >
+            <Icon name="plus" size={24} color="#FFFFFF" strokeWidth={2} />
+          </Pressable>
+        </View>
+        {routes.slice(half).map(renderTab)}
       </View>
-      {routes.slice(half).map(renderTab)}
-     </View>
     </View>
   );
 }
@@ -64,15 +65,20 @@ function TabButton({ meta, focused, onPress }: { meta: TabMeta; focused: boolean
       accessibilityState={{ selected: focused }}
       accessibilityLabel={meta.label}
       onPress={onPress}
-      className="flex-1 items-center gap-1.5 py-1"
+      className="flex-1 items-center gap-1 py-1"
     >
       <Icon
         name={meta.icon}
-        size={24}
+        size={22}
         strokeWidth={focused ? 2 : 1.5}
         color={focused ? theme.primary : theme.switchOff}
       />
-      <View className={cn("h-1 w-1 rounded-full", focused ? "bg-primary" : "bg-transparent")} />
+      <Text
+        numberOfLines={1}
+        className={cn("text-caption", focused ? "font-bold text-primary" : "font-medium text-muted-foreground")}
+      >
+        {meta.label}
+      </Text>
     </Pressable>
   );
 }

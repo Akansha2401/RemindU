@@ -8,7 +8,7 @@ import { BarChart } from "@/components/charts/bar-chart";
 import { Heatmap, weeksThatFit } from "@/components/charts/heatmap";
 import { StatTile } from "@/components/stat-tile";
 import { Icon } from "@/components/ui/icon";
-import { IconButton } from "@/components/ui/icon-button";
+import { GlassIconButton } from "@/components/ui/glass-icon-button";
 import { Segmented } from "@/components/ui/segmented";
 import { Text } from "@/components/ui/text";
 import { strings } from "@/constants/strings";
@@ -39,7 +39,7 @@ export default function ProfileScreen() {
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       <ScrollView contentContainerClassName="px-5 pb-10 pt-2">
         <View className="flex-row justify-end">
-          <IconButton icon="gear" shape="tile" accessibilityLabel={copy.settings} onPress={() => router.push("/settings")} />
+          <GlassIconButton icon="gear" accessibilityLabel={copy.settings} onPress={() => router.push("/settings")} />
         </View>
         <Identity />
         <Activity />
