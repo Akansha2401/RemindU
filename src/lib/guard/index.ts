@@ -37,6 +37,9 @@ function createNativeGuard(): Guard {
     async continueSession(id, budgetSec) {
       return AppLimiter.continueAppSession(id, budgetSec);
     },
+    async updateSession(id, edit) {
+      return AppLimiter.updateAppSession(id, edit);
+    },
     async endSession(id) {
       return AppLimiter.endAppSession(id);
     },

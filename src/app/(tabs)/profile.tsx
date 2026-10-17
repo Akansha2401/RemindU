@@ -17,17 +17,23 @@ import { useScreenTimeOnFocus, useStat } from "@/features/stats/hooks";
 import {
   averageOf,
   averageVisitMs,
+  dateKey,
   dayStreak,
+  focusByDay,
+  focusSummary,
+  fromDateKey,
   heatmap,
+  monthStarts,
   peakHour,
   screenTimeBars,
   totalCheckIns,
-  usageByDay,
 } from "@/features/stats/logic";
 import { useTheme } from "@/hooks/useTheme";
-import { formatDuration, formatHour } from "@/lib/format";
+import { useNow } from "@/hooks/useNow";
+import { useSessionPolling } from "@/hooks/useSessionPolling";
+import { formatDuration, formatHour, formatMonth, formatShortDate } from "@/lib/format";
 import { history$ } from "@/store/history.store";
-import type { ChartRange } from "@/types/stats";
+import type { ChartRange, HeatCell } from "@/types/stats";
 
 const copy = strings.profile;
 const RANGES: ChartRange[] = ["week", "month", "year"];
@@ -35,6 +41,8 @@ const RANGES: ChartRange[] = ["week", "month", "year"];
 /** Profile: who you are, your streak, activity grid, screen time and an overview. */
 export default function ProfileScreen() {
   useScreenTimeOnFocus();
+  // Activity reads the timers' usage logs; keep them fresh without 1s polling.
+  useSessionPolling(30_000);
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       <ScrollView contentContainerClassName="px-5 pb-10 pt-2">
@@ -79,14 +87,56 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
   );
 }
 
+function dayText(c: HeatCell) {
+  const date = formatShortDate(fromDateKey(c.date).getTime());
+  if (c.status === "none") return copy.dayDetail.none(date);
+  return copy.dayDetail[c.status](date, formatDuration(c.usedMs), formatDuration(c.limitMs));
+}
+
+/** GitHub-style, but positive: days within the app limits light up (about four months). */
 function Activity() {
   const { width } = useWindowDimensions();
   // Card padding (2 × 16) and screen padding (2 × 20).
   const weeks = weeksThatFit(width - 72);
-  const grid = useStat((r) => heatmap(usageByDay(r), Date.now(), weeks));
+  const grid = useStat((r) => heatmap(focusByDay(r, Date.now()), Date.now(), weeks));
+  const selected$ = useObservable<string | null>(null);
+  const selected = useValue(selected$);
+  const today = dateKey(useNow());
+  const summary = focusSummary(grid);
+  const months = monthStarts(grid).map((m) => ({ week: m.week, label: formatMonth(m.month) }));
+  const shown = grid.flat().find((c) => c.date === (selected ?? today));
+  const tracked = summary.trackedDays > 0;
+
   return (
-    <Section title={copy.activityTitle} hint={copy.activityHelp}>
-      <Heatmap weeks={grid} lessLabel={copy.less} moreLabel={copy.more} />
+    <Section
+      title={copy.activityTitle}
+      hint={tracked ? copy.activityHelp(summary.withinDays, summary.trackedDays) : copy.activityIntro}
+    >
+      <Heatmap
+        weeks={grid}
+        months={months}
+        dayLabels={copy.weekdays}
+        today={today}
+        selected={selected}
+        onSelect={(d) => selected$.set((cur) => (cur === d ? null : d))}
+        cellLabel={dayText}
+        lessLabel={copy.overLimit}
+        moreLabel={copy.wellUnder}
+      />
+      <Text className="mt-3 text-caption text-walnut">{tracked ? (shown ? dayText(shown) : null) : copy.activityEmpty}</Text>
+      {tracked && (
+        <View className="mt-4 flex-row gap-3 border-t border-border pt-4">
+          <StatTile icon="check" label={copy.daysWithin} value={String(summary.withinDays)} />
+          <View className="w-hairline bg-border" />
+          <StatTile icon="flame" label={copy.bestRun} value={copy.runDays(summary.bestRun)} />
+          <View className="w-hairline bg-border" />
+          <StatTile
+            icon="timer"
+            label={copy.avgUsed}
+            value={summary.averageUsedMs != null ? formatDuration(summary.averageUsedMs) : copy.noValue}
+          />
+        </View>
+      )}
     </Section>
   );
 }

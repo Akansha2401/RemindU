@@ -1,3 +1,5 @@
+import { Platform } from "react-native";
+import { applySessionEdit } from "@/features/sessions/logic";
 import type { AppSession, Guard, GuardApp, PermissionStatus } from "@/types/guard";
 
 const MOCK_APPS: GuardApp[] = [
@@ -13,7 +15,9 @@ const MOCK_APPS: GuardApp[] = [
 ];
 
 /**
- * In-memory guard for Expo Go / iOS / web. "Opening" a permission grants it, so the flow
+ * In-memory guard for Expo Go / iOS / web. The fake app list is iOS/web only: on Android
+ * (Expo Go, or a build without the native module) it stays empty, so fake apps never get
+ * picked and saved to the account. "Opening" a permission grants it, so the flow
  * can be clicked through. There's no foreground-app detection, so timers stay waiting and
  * there is no screen time.
  */
@@ -48,6 +52,10 @@ export function createMockGuard(): Guard {
       );
       return sessions.find((s) => s.sessionId === id) ?? null;
     },
+    async updateSession(id, edit) {
+      sessions = sessions.map((s) => (s.sessionId === id ? applySessionEdit(s, edit) : s));
+      return sessions.find((s) => s.sessionId === id) ?? null;
+    },
     async endSession(id) {
       const ended = sessions.find((s) => s.sessionId === id) ?? null;
       sessions = sessions.filter((s) => s.sessionId !== id);
@@ -57,7 +65,7 @@ export function createMockGuard(): Guard {
       return [];
     },
     async getInstalledApps() {
-      return MOCK_APPS;
+      return Platform.OS === "android" ? [] : MOCK_APPS;
     },
     async getPermissionStatus() {
       return { ...permissions };

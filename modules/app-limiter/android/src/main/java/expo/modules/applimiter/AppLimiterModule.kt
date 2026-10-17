@@ -88,6 +88,9 @@ class AppLimiterModule : Module() {
     Function("continueAppSession") { id: String, budgetSec: Double ->
       LimiterStore.continueSession(context, id, (budgetSec * 1000).toLong())?.let { sessionMap(it) }
     }
+    Function("updateAppSession") { id: String, json: String ->
+      LimiterStore.editSession(context, id, json)?.let { sessionMap(it) }
+    }
     Function("endAppSession") { id: String ->
       val ended = LimiterStore.removeSession(context, id)
       if (LimiterStore.needsService(context)) LimiterService.start(context) // refresh notification

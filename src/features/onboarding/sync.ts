@@ -1,3 +1,4 @@
+import { guard } from "@/lib/guard";
 import { supabase } from "@/lib/supabase";
 import { onboarding$ } from "@/store/onboarding.store";
 import { setup$ } from "@/store/setup.store";
@@ -27,7 +28,8 @@ export async function pushOnboarding(userId: string) {
     if (error) throw error;
   }
 
-  if (packages.length) {
+  // Mock (fake) apps never go to the account, or they'd come back on a real phone.
+  if (packages.length && guard.isNative) {
     const { error } = await supabase.from("app_rules").upsert(
       packages.map((p) => ({
         user_id: userId,

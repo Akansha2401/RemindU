@@ -35,6 +35,11 @@ export function formatLongDate(at: number) {
   return new Date(at).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
 }
 
+/** "Oct" for a month 0–11, in the phone's locale. */
+export function formatMonth(month: number) {
+  return new Date(2000, month, 1).toLocaleDateString(undefined, { month: "short" });
+}
+
 /** "1 Oct" / "1 Oct 2025" (year only when it isn't this year). */
 export function formatShortDate(at: number | string, now = Date.now()) {
   const d = new Date(at);

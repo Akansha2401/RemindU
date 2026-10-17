@@ -1,6 +1,10 @@
 import type { ScreenTimeDay } from "@/types/guard";
 import type { SessionRecord } from "@/types/stats";
 import {
+  focusByDay,
+  focusSummary,
+  fromDateKey,
+  monthStarts,
   averageVisitMs,
   dateKey,
   dayStreak,
@@ -16,7 +20,7 @@ const at = (y: number, m: number, d: number, h = 12, min = 0) => new Date(y, m -
 const MIN = 60_000;
 
 function record(partial: Partial<SessionRecord>): SessionRecord {
-  return { createdAt: at(2026, 10, 1), endedAt: null, logs: [], checkIns: 0, ...partial };
+  return { createdAt: at(2026, 10, 1), endedAt: null, logs: [], checkIns: 0, budgetSec: 30 * 60, ...partial };
 }
 
 describe("dayStreak", () => {
@@ -96,16 +100,110 @@ describe("screenTimeBars", () => {
   });
 });
 
+describe("focusByDay", () => {
+  const now = at(2026, 10, 3);
+
+  it("sets each running day's use against the session length, summed over apps", () => {
+    const insta = record({ createdAt: at(2026, 10, 2, 9), logs: [[at(2026, 10, 2, 10), at(2026, 10, 2, 10, 40)]] });
+    const yt = record({ createdAt: at(2026, 10, 2, 9), budgetSec: 60 * 60 });
+    expect(focusByDay([insta, yt], now)).toEqual({
+      "2026-10-02": { usedMs: 40 * MIN, limitMs: 90 * MIN },
+      "2026-10-03": { usedMs: 0, limitMs: 90 * MIN },
+    });
+  });
+
+  it("stops at the day a timer ended", () => {
+    const ended = record({ createdAt: at(2026, 10, 1), endedAt: at(2026, 10, 2, 8) });
+    expect(Object.keys(focusByDay([ended], now))).toEqual(["2026-10-01", "2026-10-02"]);
+  });
+
+  it("leaves out days a full (trimmed) log no longer covers", () => {
+    const logs = Array.from({ length: 300 }, (_, i): [number, number] => [at(2026, 10, 2, 10) + i * MIN, at(2026, 10, 2, 10) + i * MIN + 1_000]);
+    const full = record({ createdAt: at(2026, 9, 20), logs });
+    expect(Object.keys(focusByDay([full], now))).toEqual(["2026-10-03"]);
+  });
+});
+
 describe("heatmap", () => {
-  it("ends with the current week and scales levels to the busiest day", () => {
-    const now = at(2026, 10, 7);
-    const grid = heatmap({ "2026-10-07": 60 * MIN, "2026-10-06": 10 * MIN }, now, 4);
+  const now = at(2026, 10, 7);
+
+  it("ends with the current week and lights up days within the limits", () => {
+    const grid = heatmap(
+      {
+        "2026-10-05": { usedMs: 5 * MIN, limitMs: 30 * MIN }, // 1/6 of the limit
+        "2026-10-06": { usedMs: 25 * MIN, limitMs: 30 * MIN },
+        "2026-10-07": { usedMs: 45 * MIN, limitMs: 30 * MIN }, // over
+      },
+      now,
+      4,
+    );
     expect(grid).toHaveLength(4);
-    const lastWeek = grid[3];
-    expect(lastWeek[0].date).toBe(dateKey(at(2026, 10, 4))); // Sunday
-    expect(lastWeek[3]).toMatchObject({ date: "2026-10-07", level: 4, future: false });
-    expect(lastWeek[2].level).toBe(1);
-    expect(lastWeek[4].future).toBe(true);
+    const week = grid[3];
+    expect(week[0].date).toBe(dateKey(at(2026, 10, 4))); // Sunday
+    expect(week[0]).toMatchObject({ status: "none", level: 0 });
+    expect(week[1]).toMatchObject({ status: "within", level: 4 });
+    expect(week[2]).toMatchObject({ status: "within", level: 1 });
+    expect(week[3]).toMatchObject({ status: "over", level: 0 });
+    expect(week[4].future).toBe(true);
+  });
+});
+
+describe("focusSummary", () => {
+  it("counts tracked and within days and the longest run", () => {
+    const within = { usedMs: 0, limitMs: 30 * MIN };
+    const over = { usedMs: 60 * MIN, limitMs: 30 * MIN };
+    const grid = heatmap(
+      {
+        "2026-09-29": within,
+        "2026-09-30": within,
+        "2026-10-01": over,
+        "2026-10-02": within,
+        // 3rd: no timer, doesn't break the run
+        "2026-10-04": within,
+        "2026-10-05": within,
+      },
+      at(2026, 10, 7),
+      2,
+    );
+    expect(focusSummary(grid)).toEqual({
+      trackedDays: 6,
+      withinDays: 5,
+      bestRun: 3,
+      averageUsedMs: 10 * MIN,
+    });
+  });
+
+  it("is empty without any timers", () => {
+    expect(focusSummary(heatmap({}, at(2026, 10, 7), 2))).toEqual({
+      trackedDays: 0,
+      withinDays: 0,
+      bestRun: 0,
+      averageUsedMs: null,
+    });
+  });
+});
+
+describe("fromDateKey", () => {
+  it("reads the key as a local date", () => {
+    expect(fromDateKey("2026-10-07").getTime()).toBe(at(2026, 10, 7, 0));
+  });
+});
+
+describe("monthStarts", () => {
+  it("labels the week where each month starts", () => {
+    // 10 weeks ending the week of 7 Oct 2026: columns start on Sundays from 2 Aug.
+    const grid = heatmap({}, at(2026, 10, 7), 10);
+    expect(monthStarts(grid)).toEqual([
+      { week: 0, month: 7 }, // Aug
+      { week: 5, month: 8 }, // 6 Sep
+      { week: 9, month: 9 }, // 4 Oct
+    ]);
+  });
+
+  it("drops the first label when the next month starts right after it", () => {
+    // Columns start 27 Sep and 4 Oct: "Sep" would sit right next to "Oct".
+    const grid = heatmap({}, at(2026, 10, 7), 2);
+    expect(monthStarts(grid)).toEqual([{ week: 1, month: 9 }]);
   });
 });
 

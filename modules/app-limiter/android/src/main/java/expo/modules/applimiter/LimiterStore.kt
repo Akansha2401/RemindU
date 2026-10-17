@@ -225,6 +225,32 @@ object LimiterStore {
     return next
   }
 
+  /**
+   * Edits a timer in place, keeping its logs and check-ins. [json]: { goal, budgetSec, frequency,
+   * everyHours }. Time already used this round still counts against the new length; a waiting
+   * timer gets the full new length, and a round that already ran out stays at zero.
+   */
+  @Synchronized
+  fun editSession(ctx: Context, id: String, json: String): AppSession? {
+    val s = session(ctx, id) ?: return null
+    val o = JSONObject(json)
+    val budgetMs = o.getLong("budgetSec") * 1000L
+    val remainingMs = when (s.status) {
+      "waiting" -> budgetMs
+      "time_up", "cooldown" -> s.remainingMs
+      else -> (budgetMs - (s.budgetMs - s.remainingMs)).coerceIn(0L, budgetMs)
+    }
+    val next = s.copy(
+      goal = o.optString("goal", s.goal),
+      budgetMs = budgetMs,
+      remainingMs = remainingMs,
+      frequency = o.optString("frequency", s.frequency),
+      everyHours = o.optInt("everyHours", s.everyHours),
+    )
+    updateSession(ctx, next)
+    return next
+  }
+
   /** Removes the session and returns it as it was, so JS can keep its history. */
   @Synchronized
   fun removeSession(ctx: Context, id: String): AppSession? {

@@ -14,6 +14,9 @@ export type AppSessionConfig = {
   everyHours: number;
 };
 
+/** What can change on an existing timer (edit session, Pro). */
+export type AppSessionEdit = Pick<AppSessionConfig, "goal" | "budgetSec" | "frequency" | "everyHours">;
+
 /**
  * waiting = the app hasn't been opened since the timer was added;
  * counting = the app is open; paused = opened before, closed now (or screen off);
@@ -64,6 +67,8 @@ export type Guard = {
   getSessions(): Promise<AppSession[]>;
   /** After time is up: start a new budget (continuous). */
   continueSession(sessionId: string, budgetSec: number): Promise<AppSession | null>;
+  /** Changes length, frequency or goal in place; keeps the logs and the time already used. */
+  updateSession(sessionId: string, edit: AppSessionEdit): Promise<AppSession | null>;
   /** Removes the timer and returns its final state. */
   endSession(sessionId: string): Promise<AppSession | null>;
   /** Last `days` days, today first. Empty without usage access. */

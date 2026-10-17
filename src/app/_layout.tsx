@@ -84,6 +84,7 @@ export default function RootLayout() {
               dangerouslySingular={(_, params) => String(params.id)}
               options={{ animation: "fade" }}
             />
+            <Stack.Screen name="session/edit/[id]" options={{ presentation: "modal" }} />
             <Stack.Screen name="goals/new" options={{ presentation: "modal" }} />
             <Stack.Screen name="settings/index" />
             <Stack.Screen name="settings/account" />

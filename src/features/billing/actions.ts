@@ -62,6 +62,15 @@ export async function showPaywall(): Promise<boolean> {
   }
 }
 
+/**
+ * Gate for Pro features: true right away for Pro users, otherwise opens the paywall straight
+ * away (no extra "go Pro" popup) and resolves true if they bought or restored.
+ */
+export async function requirePro(): Promise<boolean> {
+  if (subscription$.isPro.peek()) return true;
+  return showPaywall();
+}
+
 /** RevenueCat Customer Center: cancel, change plan, refunds, restore and the store's manage page. */
 export async function openCustomerCenter() {
   ensureConfigured();

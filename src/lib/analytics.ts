@@ -4,6 +4,7 @@ import type { PermissionKind } from "@/types/guard";
 type Events = {
   onboarding_step: { step: string; permission?: PermissionKind; granted?: boolean };
   session_started: { budget_sec: number; frequency: string; apps_count: number };
+  session_edited: { budget_sec: number; frequency: string };
 };
 
 type Sink = (event: string, props: Record<string, unknown>) => void;

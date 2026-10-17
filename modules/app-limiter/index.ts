@@ -66,6 +66,9 @@ export type NativeAppSessionConfig = Pick<
   "sessionId" | "packageName" | "label" | "goal" | "budgetSec" | "frequency" | "everyHours"
 >;
 
+/** What can change on an existing timer (Pro: edit session). */
+export type NativeAppSessionEdit = Pick<NativeAppSession, "goal" | "budgetSec" | "frequency" | "everyHours">;
+
 /** Foreground time for one day (yyyy-MM-dd), with the five most used apps. */
 export type NativeScreenTimeDay = {
   date: string;
@@ -92,6 +95,7 @@ type AppLimiterNative = {
   addAppSessions(json: string): void;
   getAppSessions(): NativeAppSession[];
   continueAppSession(id: string, budgetSec: number): NativeAppSession | null;
+  updateAppSession(id: string, json: string): NativeAppSession | null;
   endAppSession(id: string): NativeAppSession | null;
   getScreenTime(days: number): Promise<NativeScreenTimeDay[]>;
   openApp(pkg: string): boolean;
@@ -138,6 +142,7 @@ export const AppLimiter = {
   addAppSessions: (configs: NativeAppSessionConfig[]) => native().addAppSessions(JSON.stringify(configs)),
   getAppSessions: () => native().getAppSessions(),
   continueAppSession: (id: string, budgetSec: number) => native().continueAppSession(id, budgetSec),
+  updateAppSession: (id: string, edit: NativeAppSessionEdit) => native().updateAppSession(id, JSON.stringify(edit)),
   endAppSession: (id: string) => native().endAppSession(id),
   getScreenTime: (days: number) => native().getScreenTime(days),
 

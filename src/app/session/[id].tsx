@@ -6,11 +6,13 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTim
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppIcon } from "@/components/app-icon";
 import { ScreenHeader } from "@/components/screen-header";
+import { Icon } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import { CountdownRing } from "@/components/ui/countdown-ring";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Text } from "@/components/ui/text";
 import { strings } from "@/constants/strings";
+import { billingErrorMessage, requirePro } from "@/features/billing/actions";
 import { maybeShowAttribution } from "@/features/onboarding/attribution";
 import { SessionTimer, STATUS_TONE } from "@/features/sessions/components";
 import { useAppIcons } from "@/hooks/useGuardApps";
@@ -20,6 +22,7 @@ import { formatClock, formatDuration, formatShortDate } from "@/lib/format";
 import { history$ } from "@/store/history.store";
 import { sessionActions, sessions$ } from "@/store/session.store";
 import { setup$ } from "@/store/setup.store";
+import { subscription$ } from "@/store/subscription.store";
 import type { AppSession, UsageLog } from "@/types/guard";
 import type { ArchivedSession } from "@/types/stats";
 
@@ -45,6 +48,16 @@ export default function SessionScreen() {
 /** The active timer, or the ended one from history. */
 function useSession(id: string): AppSession | ArchivedSession | undefined {
   return useValue(() => sessions$[id].get() ?? history$.sessions[id].get());
+}
+
+/** Edit is Pro: free users go straight to the paywall, and on to the editor if they upgrade. */
+function openEdit(id: string) {
+  requirePro()
+    .then((pro) => pro && router.push({ pathname: "/session/edit/[id]", params: { id } }))
+    .catch((e) => {
+      const message = billingErrorMessage(e);
+      if (message) Alert.alert(message);
+    });
 }
 
 function goHome() {
@@ -78,12 +91,16 @@ function Detail({ id, ended }: { id: string; ended: boolean }) {
         <Goal id={id} />
         <Details id={id} />
         <TimeLog id={id} />
+        {/* Deliberately small and at the very end: ending a timer shouldn't be one easy tap. */}
+        {!ended && (
+          <Button variant="link" size="sm" className="mt-8 self-center" onPress={confirmEnd}>
+            <Text className="text-muted-foreground underline">{copy.end}</Text>
+          </Button>
+        )}
       </ScrollView>
       {!ended && (
         <View className="px-5 pb-4 pt-3">
-          <Button variant="secondary" onPress={confirmEnd}>
-            <Text>{copy.end}</Text>
-          </Button>
+          <EditButton id={id} />
         </View>
       )}
     </SafeAreaView>
@@ -177,6 +194,23 @@ function Details({ id }: { id: string }) {
         ))}
       </View>
     </View>
+  );
+}
+
+/** The main action: edit length, frequency and goal. Tagged PRO for free users (opens the paywall). */
+function EditButton({ id }: { id: string }) {
+  const theme = useTheme();
+  const isPro = useValue(subscription$.isPro);
+  return (
+    <Button onPress={() => openEdit(id)}>
+      <Icon name="pencil" size={18} color={theme.primaryForeground} />
+      <Text>{copy.editSession}</Text>
+      {!isPro && (
+        <View className="rounded-full bg-white/25 px-2 py-0.5">
+          <Text className="text-caption font-bold text-primary-foreground">{strings.billing.badge}</Text>
+        </View>
+      )}
+    </Button>
   );
 }
 

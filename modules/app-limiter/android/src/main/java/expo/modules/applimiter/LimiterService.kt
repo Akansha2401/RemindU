@@ -162,13 +162,20 @@ class LimiterService : Service() {
    * the rest wait or pause. Blocks the app when its timer hits zero, and while it's cooling down.
    */
   private fun tickSessions(fg: String?, now: Long) {
+    // Read-modify-write under the store's lock, so an edit from JS mid-tick isn't overwritten.
+    val next = synchronized(LimiterStore) { advanceSessions(fg, now) } ?: return
+    block(next.firstOrNull { it.isBlocked && it.pkg == fg }, now)
+  }
+
+  /** Counts down the open app's timer and saves the result; null when there are no timers. */
+  private fun advanceSessions(fg: String?, now: Long): List<AppSession>? {
     val list = LimiterStore.sessions(this)
     val elapsed = if (sessionTickAt > 0) (now - sessionTickAt).coerceIn(0L, MAX_TICK_MS) else 0L
     val from = if (sessionTickAt > 0) now - elapsed else now
     sessionTickAt = now
     if (list.isEmpty()) {
       overlay.hide()
-      return
+      return null
     }
 
     val next = list.map { prev ->
@@ -187,7 +194,7 @@ class LimiterService : Service() {
       if (remaining == 0L) LimiterStore.timeUp(used, now) else used.copy(remainingMs = remaining, status = "counting")
     }
     if (next != list) LimiterStore.saveSessions(this, next)
-    block(next.firstOrNull { it.isBlocked && it.pkg == fg }, now)
+    return next
   }
 
   private val AppSession.isBlocked get() = status == "time_up" || status == "cooldown"

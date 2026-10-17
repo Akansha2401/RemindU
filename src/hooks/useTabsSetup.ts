@@ -6,6 +6,7 @@ import { useLimitSync } from "@/features/limiter/hooks";
 import { flushPendingOnboarding } from "@/features/onboarding/sync";
 import { authStore$ } from "@/store/auth.store";
 import { onboarding$ } from "@/store/onboarding.store";
+import { sessionActions } from "@/store/session.store";
 
 /** Side effects shared by the Android and iOS tab layouts. */
 export function useTabsSetup() {
@@ -16,6 +17,11 @@ export function useTabsSetup() {
   useEffect(() => {
     if (userId) flushPendingOnboarding(userId).catch((e) => console.warn("onboarding sync retry failed", e));
   }, [userId]);
+
+  // Timers restored for apps this phone doesn't have (e.g. the iOS mock's fake apps).
+  useEffect(() => {
+    sessionActions.pruneUninstalled().catch((e) => console.warn("could not prune timers", e));
+  }, []);
 
   // Screen 8 (trial) is behind a flag and shown once, after sign-in.
   useEffect(() => {
