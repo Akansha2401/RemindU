@@ -380,6 +380,23 @@ export const strings = {
     ],
   },
 
+  billing: {
+    section: "RemindU Pro",
+    upgrade: "Upgrade to RemindU Pro",
+    upgradeHint: "Monthly or yearly",
+    pro: "RemindU Pro",
+    renews: (date: string) => `Renews ${date}`,
+    ends: (date: string) => `Ends ${date}`,
+    active: "Active",
+    restore: "Restore purchases",
+    restored: "Your RemindU Pro is back.",
+    nothingToRestore: "We couldn't find a RemindU Pro purchase for this store account.",
+    welcome: "You're on RemindU Pro.",
+    pending: "Your payment is pending. Pro turns on once it goes through.",
+    notAllowed: "Purchases aren't allowed on this device.",
+    unavailable: "Subscriptions aren't available right now. Try again later.",
+  },
+
   attribution: {
     title: "Nice, first session done.",
     subtitle: "Quick one: how did you find RemindU?",

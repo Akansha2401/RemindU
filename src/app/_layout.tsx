@@ -20,8 +20,10 @@ import { focusManager, QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query";
 import { useOnlineManager } from "@/hooks/useOnlineManager";
 import { useAppState } from "@/hooks/useAppState";
+import { initPurchases } from "@/lib/purchases";
 
 SplashScreen.preventAutoHideAsync();
+initPurchases();
 
 function onAppStateChange(status: AppStateStatus) {
   if (Platform.OS !== "web") {

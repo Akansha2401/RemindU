@@ -1,16 +1,26 @@
 import { useEffect } from "react";
-import { Pressable, View } from "react-native";
+import { Alert, Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { TRIAL_CONFIG } from "@/config/flags";
 import { strings } from "@/constants/strings";
+import { billingErrorMessage, showPaywall } from "@/features/billing/actions";
 import { onboarding$ } from "@/store/onboarding.store";
 
 const copy = strings.onboarding.trial;
 
-/** Screen 8, behind FLAGS.trialScreen (off for the MVP; billing is Phase 2). */
+function startTrial() {
+  showPaywall()
+    .then((pro) => pro && router.back())
+    .catch((e) => {
+      const message = billingErrorMessage(e);
+      if (message) Alert.alert(message);
+    });
+}
+
+/** Screen 8, behind FLAGS.trialScreen. */
 export default function TrialScreen() {
   useEffect(() => {
     onboarding$.trialSeen.set(true);
@@ -47,8 +57,8 @@ export default function TrialScreen() {
         ))}
       </View>
       <View className="pb-4">
-        {/* Play Billing arrives in Phase 2; until then this just closes the screen. */}
-        <Button onPress={() => router.back()}>
+        {/* The RevenueCat paywall shows the plans; the trial itself is an intro offer on the store product. */}
+        <Button onPress={startTrial}>
           <Text>{copy.cta}</Text>
         </Button>
       </View>
