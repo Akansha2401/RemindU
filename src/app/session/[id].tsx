@@ -12,7 +12,7 @@ import { CountdownRing } from "@/components/ui/countdown-ring";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Text } from "@/components/ui/text";
 import { strings } from "@/constants/strings";
-import { billingErrorMessage, requirePro } from "@/features/billing/actions";
+import { withPro } from "@/features/billing/actions";
 import { maybeShowAttribution } from "@/features/onboarding/attribution";
 import { SessionTimer, STATUS_TONE } from "@/features/sessions/components";
 import { useAppIcons } from "@/hooks/useGuardApps";
@@ -51,14 +51,7 @@ function useSession(id: string): AppSession | ArchivedSession | undefined {
 }
 
 /** Edit is Pro: free users go straight to the paywall, and on to the editor if they upgrade. */
-function openEdit(id: string) {
-  requirePro()
-    .then((pro) => pro && router.push({ pathname: "/session/edit/[id]", params: { id } }))
-    .catch((e) => {
-      const message = billingErrorMessage(e);
-      if (message) Alert.alert(message);
-    });
-}
+const openEdit = (id: string) => withPro(() => router.push({ pathname: "/session/edit/[id]", params: { id } }));
 
 function goHome() {
   if (router.canGoBack()) router.back();

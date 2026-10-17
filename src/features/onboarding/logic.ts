@@ -1,4 +1,5 @@
 // Pure onboarding rules, kept free of React and storage so they can be unit-tested.
+import { BILLING } from "@/config/billing";
 import { GOAL_MAX, GOAL_MIN, PERSONA_SUGGESTIONS, SUGGESTED_APPS } from "@/config/onboarding";
 import type { PermissionKind, PermissionStatus } from "@/types/guard";
 import {
@@ -80,8 +81,8 @@ export function applyPersona(state: OnboardingState, persona: Persona): Onboardi
 }
 
 /**
- * APP-03: pre-toggles suggested apps that are installed, once. After that the user's
- * own choices are kept, even if they deselected every suggestion.
+ * APP-03: pre-toggles suggested apps that are installed (up to the free limit), once. After
+ * that the user's own choices are kept, even if they deselected every suggestion.
  */
 export function prefillApps(
   state: Pick<OnboardingState, "apps" | "appLabels" | "appsPrefilled">,
@@ -93,6 +94,7 @@ export function prefillApps(
   const appLabels = { ...state.appLabels };
   for (const s of SUGGESTED_APPS) {
     if (!installedPkgs.has(s.packageName)) continue;
+    if (selectedPackages(apps).length >= BILLING.freeAppLimit) break;
     apps[s.packageName] = true;
     appLabels[s.packageName] = installed.find((a) => a.packageName === s.packageName)?.label ?? s.label;
   }

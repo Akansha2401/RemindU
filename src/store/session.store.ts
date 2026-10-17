@@ -1,4 +1,5 @@
 import { batch, observable } from "@legendapp/state";
+import { BILLING } from "@/config/billing";
 import { selectedPackages } from "@/features/onboarding/logic";
 import { track } from "@/lib/analytics";
 import { guard } from "@/lib/guard";
@@ -8,6 +9,7 @@ import type { AppSession, AppSessionEdit } from "@/types/guard";
 import type { Frequency } from "@/types/onboarding";
 import { historyActions } from "./history.store";
 import { setup$ } from "./setup.store";
+import { subscription$ } from "./subscription.store";
 
 /**
  * Mirror of the per-app timers, keyed by session id. The phone (native service) is the source
@@ -81,8 +83,11 @@ export const sessionActions = {
     const s = setup$.peek();
     // Apps saved to the account on another phone (or by the iOS mock) may not be installed here.
     const installed = guard.isNative ? await installedPackages() : null;
+    // Free users get timers for the first few; Pro (once known) can add the rest from the Add sheet.
+    const limit = subscription$.isPro.peek() ? Infinity : BILLING.freeAppLimit;
     const apps = selectedPackages(s.apps)
       .filter((p) => !installed || installed.has(p))
+      .slice(0, limit)
       .map((p) => ({ packageName: p, label: s.appLabels[p] ?? p }));
     await sessionActions.add({ apps, budgetSec: s.lengthMin * 60, frequency: s.frequency, everyHours: s.everyHours });
   },

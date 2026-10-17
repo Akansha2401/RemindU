@@ -18,14 +18,21 @@ type Selection = {
   labels$: Observable<Record<string, string>>;
 };
 
-type AppPickerProps = Selection & {
-  /** Called once with the installed apps, e.g. to pre-toggle suggestions. */
-  onLoaded?: (apps: GuardApp[]) => void;
+type Limit = {
+  /** Most apps that can be on at once; "Select all" is hidden when set. */
+  max?: number;
+  /** Turning on one more app than `max` calls this instead. */
+  onLimit?: () => void;
 };
 
+type AppPickerProps = Selection &
+  Limit & {
+    /** Called once with the installed apps, e.g. to pre-toggle suggestions. */
+    onLoaded?: (apps: GuardApp[]) => void;
+  };
 
 /** Suggested apps first (APP-03), "See all apps" expands the categorised list (APP-02/04). */
-export function AppPicker({ selected$, labels$, onLoaded }: AppPickerProps) {
+export function AppPicker({ selected$, labels$, onLoaded, max, onLimit }: AppPickerProps) {
   const apps = useGuardApps();
   const expanded$ = useObservable(false);
   const expanded = useValue(expanded$);
@@ -51,7 +58,14 @@ export function AppPicker({ selected$, labels$, onLoaded }: AppPickerProps) {
   return (
     <View className="gap-5">
       {suggested.length > 0 && (
-        <AppGroup title={strings.onboarding.apps.suggested} apps={suggested} selected$={selected$} labels$={labels$} />
+        <AppGroup
+          title={strings.onboarding.apps.suggested}
+          apps={suggested}
+          selected$={selected$}
+          labels$={labels$}
+          max={max}
+          onLimit={onLimit}
+        />
       )}
 
       <Button variant="tertiary" onPress={() => expanded$.set((v) => !v)}>
@@ -60,13 +74,22 @@ export function AppPicker({ selected$, labels$, onLoaded }: AppPickerProps) {
 
       {expanded &&
         sections.map((s) => (
-          <AppGroup key={s.key} title={s.label} apps={s.apps} section={s} selected$={selected$} labels$={labels$} />
+          <AppGroup
+            key={s.key}
+            title={s.label}
+            apps={s.apps}
+            section={max == null ? s : undefined}
+            selected$={selected$}
+            labels$={labels$}
+            max={max}
+            onLimit={onLimit}
+          />
         ))}
     </View>
   );
 }
 
-function AppGroup(props: Selection & { title: string; apps: InstalledApp[]; section?: AppSection }) {
+function AppGroup(props: Selection & Limit & { title: string; apps: InstalledApp[]; section?: AppSection }) {
   const { selected$, labels$ } = props;
   const allOn = useValue(() => props.apps.every((a) => selected$[a.packageName].get()));
 
@@ -91,16 +114,18 @@ function AppGroup(props: Selection & { title: string; apps: InstalledApp[]; sect
       </View>
       <View className="gap-2.5">
         {props.apps.map((a) => (
-          <AppRow key={a.packageName} app={a} selected$={selected$} labels$={labels$} />
+          <AppRow key={a.packageName} app={a} selected$={selected$} labels$={labels$} max={props.max} onLimit={props.onLimit} />
         ))}
       </View>
     </View>
   );
 }
 
-function AppRow({ app, selected$, labels$ }: Selection & { app: InstalledApp }) {
+function AppRow({ app, selected$, labels$, max, onLimit }: Selection & Limit & { app: InstalledApp }) {
   const on = useValue(() => !!selected$[app.packageName].get());
   function toggle() {
+    const count = Object.values(selected$.peek()).filter(Boolean).length;
+    if (!on && max != null && count >= max) return onLimit?.();
     batch(() => {
       selected$[app.packageName].set(!on);
       labels$[app.packageName].set(app.label);

@@ -71,6 +71,8 @@ export const strings = {
       cta: "Looks right",
       pickOne: "Pick at least one app",
       selectedCount: (n: number) => `${n} app${n === 1 ? "" : "s"} selected`,
+      limitTitle: (n: number) => `Start with ${n} apps`,
+      limitBody: "The free plan covers 3 apps. Once you're in, RemindU Pro lets you add as many as you like.",
       loading: "Finding your apps",
     },
 
@@ -205,6 +207,8 @@ export const strings = {
     searchPlaceholder: "Search apps",
     noResults: (q: string) => `No apps match “${q}”`,
     running: "Has a timer",
+    freeUsed: (used: number, limit: number) => `${used} of ${limit} free apps used`,
+    getPro: "Get Pro for more",
     next: (n: number) => (n ? `Next · ${n} app${n === 1 ? "" : "s"}` : "Pick at least one app"),
     setupTitle: "Session settings",
     setupSubtitle: (n: number) =>

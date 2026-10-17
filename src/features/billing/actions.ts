@@ -1,3 +1,4 @@
+import { Alert } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import Purchases, {
   PURCHASES_ERROR_CODE,
@@ -69,6 +70,16 @@ export async function showPaywall(): Promise<boolean> {
 export async function requirePro(): Promise<boolean> {
   if (subscription$.isPro.peek()) return true;
   return showPaywall();
+}
+
+/** Runs `action` for Pro users; free users see the paywall first, and it runs if they upgrade. */
+export function withPro(action: () => void) {
+  requirePro()
+    .then((pro) => pro && action())
+    .catch((e) => {
+      const message = billingErrorMessage(e);
+      if (message) Alert.alert(message);
+    });
 }
 
 /** RevenueCat Customer Center: cancel, change plan, refunds, restore and the store's manage page. */

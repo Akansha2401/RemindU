@@ -1,5 +1,5 @@
 import type { CustomerInfo, PurchasesEntitlementInfo } from "react-native-purchases";
-import { toSubscription } from "../logic";
+import { canAddApp, toSubscription } from "../logic";
 
 const ENTITLEMENT = "remindu_pro";
 
@@ -48,5 +48,22 @@ describe("toSubscription", () => {
       willRenew: false,
       periodType: "TRIAL",
     });
+  });
+});
+
+describe("canAddApp", () => {
+  const taken = ["insta", "yt"];
+
+  it("allows apps up to the free limit", () => {
+    expect(canAddApp("reddit", taken, false, 3)).toBe(true);
+    expect(canAddApp("netflix", [...taken, "reddit"], false, 3)).toBe(false);
+  });
+
+  it("doesn't count an app that already has a timer twice", () => {
+    expect(canAddApp("yt", [...taken, "reddit"], false, 3)).toBe(true);
+  });
+
+  it("has no limit with Pro", () => {
+    expect(canAddApp("netflix", [...taken, "reddit", "x"], true, 3)).toBe(true);
   });
 });

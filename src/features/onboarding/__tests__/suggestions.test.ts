@@ -1,5 +1,5 @@
 import { detectBrand, GOAL_MAX, GOAL_MIN, PERSONA_SUGGESTIONS, PERSONAS, SUGGESTED_APPS } from "@/config/onboarding";
-import { applyPersona, INITIAL_ONBOARDING, isGoalValid, splitSuggested, suggestionsFor } from "../logic";
+import { applyPersona, INITIAL_ONBOARDING, isGoalValid, prefillApps, selectedPackages, splitSuggested, suggestionsFor } from "../logic";
 
 describe("persona suggestions", () => {
   it("has three goals and three whys for every persona tile", () => {
@@ -72,6 +72,14 @@ describe("suggested apps", () => {
     expect(SUGGESTED_APPS.map((a) => a.label)).toEqual([
       "Instagram", "YouTube", "Snapchat", "Facebook", "X", "Reddit", "ShareChat", "Moj", "Josh",
     ]);
+  });
+});
+
+describe("prefillApps", () => {
+  it("pre-toggles installed suggestions only up to the free limit (3)", () => {
+    const installed = SUGGESTED_APPS.slice(0, 5);
+    const next = prefillApps(INITIAL_ONBOARDING, installed);
+    expect(selectedPackages(next.apps)).toEqual(SUGGESTED_APPS.slice(0, 3).map((a) => a.packageName));
   });
 });
 

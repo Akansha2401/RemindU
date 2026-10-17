@@ -5,6 +5,8 @@ import { Chip } from "@/components/ui/chip";
 import { IconButton } from "@/components/ui/icon-button";
 import { Text } from "@/components/ui/text";
 import { strings } from "@/constants/strings";
+import { withPro } from "@/features/billing/actions";
+import { subscription$ } from "@/store/subscription.store";
 import type { Frequency } from "@/types/onboarding";
 
 // Session length and check-in frequency, shared by the Add sheet and Edit session.
@@ -32,6 +34,7 @@ export function FieldLabel({ children }: { children: string }) {
 export function LengthField({ form$ }: FormProps) {
   const length = useValue(form$.lengthMin);
   const custom = useValue(form$.custom);
+  const isPro = useValue(subscription$.isPro);
   const hours = Math.floor(length / 60);
   const minutes = length % 60;
   const setCustom = (h: number, m: number) => form$.lengthMin.set(Math.max(0, h) * 60 + Math.max(0, m));
@@ -49,7 +52,13 @@ export function LengthField({ form$ }: FormProps) {
               onPress={() => batch(() => form$.assign({ lengthMin: m, custom: false }))}
             />
           ))}
-          <Chip label={copy.custom} selected={custom} onPress={() => form$.custom.set(true)} />
+          {/* Custom length is Pro: free users get the paywall, then the steppers if they upgrade. */}
+          <Chip
+            label={copy.custom}
+            selected={custom}
+            badge={isPro ? undefined : strings.billing.badge}
+            onPress={() => withPro(() => form$.custom.set(true))}
+          />
         </View>
         {custom && (
           <View className="flex-row gap-2">

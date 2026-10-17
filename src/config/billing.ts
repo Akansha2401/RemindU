@@ -10,6 +10,8 @@ import { Platform } from "react-native";
 export const BILLING = {
   /** Entitlement unlocked by either product. */
   entitlement: "remindu_pro",
+  /** Apps a free user can put a timer on (Pro: unlimited). */
+  freeAppLimit: 3,
   /** Store product ids, attached to the `$rc_monthly` / `$rc_annual` packages of the current offering. */
   products: { monthly: "monthly", yearly: "yearly" },
   apiKey:

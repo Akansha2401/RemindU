@@ -12,14 +12,18 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { GlassIconButton } from "@/components/ui/glass-icon-button";
 import { SearchInput } from "@/components/ui/search-input";
 import { Text } from "@/components/ui/text";
+import { BILLING } from "@/config/billing";
 import { strings } from "@/constants/strings";
+import { withPro } from "@/features/billing/actions";
+import { canAddApp } from "@/features/billing/logic";
 import { groupApps } from "@/features/limiter/categories";
 import { FrequencyField, isPreset, LengthField, type TimerForm } from "@/features/sessions/fields";
 import { pushAppRules } from "@/features/sessions/sync";
 import { toInstalledApp, useGuardApps } from "@/hooks/useGuardApps";
 import { usePermissionStatus } from "@/hooks/usePermissionStatus";
 import { sessionActions, sessions$ } from "@/store/session.store";
-import { setup$ } from "@/store/setup.store";
+import { SETUP_DEFAULTS, setup$ } from "@/store/setup.store";
+import { subscription$ } from "@/store/subscription.store";
 import type { GuardApp } from "@/types/guard";
 
 const copy = strings.add;
@@ -32,16 +36,25 @@ type AddForm = TimerForm & {
   saving: boolean;
 };
 
+/** Apps that would have a timer after Done: the running ones plus the picked ones. */
+function takenApps(form$: Observable<AddForm>) {
+  const running = Object.values(sessions$.get() ?? {}).map((s) => s.packageName);
+  const picked = Object.keys(form$.selected.get()).filter((p) => form$.selected[p].get());
+  return new Set([...running, ...picked]);
+}
+
 /** Bottom sheet from the tab bar's + button: pick apps, then length and check-in frequency. */
 export default function AddSheet() {
   const insets = useSafeAreaInsets();
   const last = setup$.peek();
+  // A custom length from a Pro period falls back to the default once Pro has lapsed.
+  const lengthMin = subscription$.isPro.peek() || isPreset(last.lengthMin) ? last.lengthMin : SETUP_DEFAULTS.lengthMin;
   const form$ = useObservable<AddForm>({
     step: "pick",
     query: "",
     selected: {},
-    lengthMin: last.lengthMin,
-    custom: !isPreset(last.lengthMin),
+    lengthMin,
+    custom: !isPreset(lengthMin),
     frequency: last.frequency,
     everyHours: last.everyHours,
     saving: false,
@@ -107,6 +120,7 @@ function PickApps({ form$ }: FormProps) {
           placeholder={copy.searchPlaceholder}
           accessibilityLabel={copy.searchPlaceholder}
         />
+        <FreeLimit form$={form$} />
       </View>
       {apps.isLoading ? (
         <View className="items-center gap-3 py-10">
@@ -137,10 +151,34 @@ function PickApps({ form$ }: FormProps) {
   );
 }
 
+/** Free users: how many of their 3 apps are taken, with a way to Pro. */
+function FreeLimit({ form$ }: FormProps) {
+  const isPro = useValue(subscription$.isPro);
+  const used = useValue(() => takenApps(form$).size);
+  if (isPro) return null;
+  const limit = BILLING.freeAppLimit;
+  return (
+    <View className="mt-2 flex-row items-center justify-between px-1">
+      <Text className="text-caption text-walnut">{copy.freeUsed(Math.min(used, limit), limit)}</Text>
+      <Pressable accessibilityRole="button" hitSlop={8} onPress={() => withPro(() => {})}>
+        <Text className="text-caption font-bold text-primary">{copy.getPro}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 function AppRow({ app, form$ }: FormProps & { app: GuardApp }) {
   const on = useValue(() => !!form$.selected[app.packageName].get());
   const running = useValue(() => Object.values(sessions$.get() ?? {}).some((s) => s.packageName === app.packageName));
-  const toggle = () => form$.selected[app.packageName].set(on ? undefined : app.label);
+  const select = () => form$.selected[app.packageName].set(app.label);
+
+  function toggle() {
+    if (on) return form$.selected[app.packageName].set(undefined);
+    // Past the free limit: straight to the paywall, and the app is picked if they upgrade.
+    const allowed = canAddApp(app.packageName, takenApps(form$), subscription$.isPro.peek(), BILLING.freeAppLimit);
+    if (allowed) select();
+    else withPro(select);
+  }
   return (
     <Pressable onPress={toggle} className="flex-row items-center gap-3 rounded-input bg-card px-3.5 py-3">
       <AppIcon uri={app.iconBase64} size={40} label={app.label} />
