@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><g transform="translate(182.0 158.9) scale(0.66)"><g fill="#FFFFFF">
+<path d="M276 560 L196 500 Q192 590 262 634 Z"/>
+<ellipse cx="500" cy="296" rx="22" ry="56" transform="rotate(-22 500 296)"/>
+<ellipse cx="550" cy="292" rx="20" ry="48" transform="rotate(18 550 292)"/>
+<path fill-rule="evenodd" d="M240 560 a250 250 0 1 0 500 0 a250 250 0 1 0 -500 0 Z M518 500 a38 38 0 1 0 76 0 a38 38 0 1 0 -76 0 Z M618 496 a34 34 0 1 0 68 0 a34 34 0 1 0 -68 0 Z"/>
+<path d="M716 520 Q822 554 716 594 Z"/>
+</g></g></svg>
