@@ -44,3 +44,4 @@ example
 
 # local native module build output
 modules/*/android/build/
+remindu*
