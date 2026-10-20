@@ -17,6 +17,12 @@ export const strings = {
     offline: "You're offline. Connect to the internet and try again.",
   },
 
+  splash: {
+    title: "RemindU",
+    tagline: "Fewer scrolls. More of your goal.",
+    skip: "Skip intro",
+  },
+
   onboarding: {
     progress: (step: number, total: number) => `Step ${step} of ${total}`,
 

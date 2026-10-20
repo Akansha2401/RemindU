@@ -21,6 +21,7 @@ import { queryClient } from "@/lib/query";
 import { useOnlineManager } from "@/hooks/useOnlineManager";
 import { useAppState } from "@/hooks/useAppState";
 import { initPurchases } from "@/lib/purchases";
+import { AnimatedSplash } from "@/components/brand/animated-splash";
 
 SplashScreen.preventAutoHideAsync();
 initPurchases();
@@ -111,6 +112,8 @@ export default function RootLayout() {
           <Stack.Screen name="auth/callback" />
         </Stack>
         <PortalHost />
+        {/* Takes over from the native splash with Pip in the same spot, then reveals the stack above. */}
+        <AnimatedSplash scheme={scheme} />
       </ThemeProvider>
     </QueryClientProvider>
   );
