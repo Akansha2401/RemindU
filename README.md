@@ -21,6 +21,8 @@
 
 > [!TIP]
 > **Testing on a physical device without Expo Go?** Follow the [Android Development Build guide](./Eas.md).
+>
+> **Building a release for the Play Store?** Follow the [Android Builds guide](./Build.md).
 
 ---
 
